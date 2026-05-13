@@ -1,0 +1,54 @@
+<?php
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+
+require_once 'db-connect.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+    exit;
+}
+
+$token = isset($_GET['token']) ? trim($_GET['token']) : '';
+$projectId = isset($_GET['project_id']) ? trim($_GET['project_id']) : '';
+
+if (empty($token) || empty($projectId)) {
+    echo json_encode(['success' => false, 'message' => 'Token a project_id sú povinné']);
+    exit;
+}
+
+try {
+    $db = getDB();
+
+    $stmt = $db->prepare("
+        SELECT id, customer_name, customer_email, is_used, project_id 
+        FROM tokens 
+        WHERE token = ? AND project_id = ?
+    ");
+    $stmt->execute([$token, $projectId]);
+    $tokenData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$tokenData) {
+        echo json_encode(['success' => false, 'message' => 'Neplatný token']);
+        exit;
+    }
+
+    if ($tokenData['is_used'] == 1) {
+        echo json_encode(['success' => false, 'message' => 'Token už bol použitý']);
+        exit;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'data' => [
+            'customer_name' => $tokenData['customer_name'],
+            'customer_email' => $tokenData['customer_email']
+        ]
+    ]);
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Chyba servera: ' . $e->getMessage()]);
+}
+?>

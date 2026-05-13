@@ -1,0 +1,181 @@
+<?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+echo "<h1>SQLite Database Diagnostics</h1>";
+echo "<hr>";
+
+// Test 1: Check database file existence and permissions
+echo "<h2>1. Database File Check</h2>";
+$dbFile = __DIR__ . '/../db/ukstav.db';
+$dbDir = __DIR__ . '/../db/';
+
+echo "Database path: <strong>$dbFile</strong><br>";
+echo "Database directory: <strong>$dbDir</strong><br>";
+
+if (file_exists($dbFile)) {
+    echo "✅ Database file exists<br>";
+    echo "File size: " . filesize($dbFile) . " bytes<br>";
+    echo "File permissions: " . substr(sprintf('%o', fileperms($dbFile)), -4) . "<br>";
+    echo "Is readable: " . (is_readable($dbFile) ? "✅ Yes" : "❌ No") . "<br>";
+    echo "Is writable: " . (is_writable($dbFile) ? "✅ Yes" : "❌ No") . "<br>";
+} else {
+    echo "❌ Database file does NOT exist<br>";
+}
+
+if (file_exists($dbDir)) {
+    echo "✅ Database directory exists<br>";
+    echo "Directory permissions: " . substr(sprintf('%o', fileperms($dbDir)), -4) . "<br>";
+    echo "Is writable: " . (is_writable($dbDir) ? "✅ Yes" : "❌ No") . "<br>";
+} else {
+    echo "❌ Database directory does NOT exist<br>";
+}
+
+echo "<hr>";
+
+// Test 2: Try to connect
+echo "<h2>2. Database Connection Test</h2>";
+try {
+    $db = new PDO('sqlite:' . $dbFile);
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    echo "✅ Connection successful<br>";
+} catch (PDOException $e) {
+    echo "❌ Connection failed: " . $e->getMessage() . "<br>";
+    exit;
+}
+
+echo "<hr>";
+
+// Test 3: List all tables
+echo "<h2>3. Database Tables</h2>";
+try {
+    $stmt = $db->query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");
+    $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    if (empty($tables)) {
+        echo "⚠️ No tables found in database<br>";
+    } else {
+        echo "✅ Found " . count($tables) . " table(s):<br>";
+        echo "<ul>";
+        foreach ($tables as $table) {
+            echo "<li><strong>$table</strong></li>";
+        }
+        echo "</ul>";
+    }
+} catch (PDOException $e) {
+    echo "❌ Error listing tables: " . $e->getMessage() . "<br>";
+}
+
+echo "<hr>";
+
+// Test 4: Check table structure
+echo "<h2>4. Table Structures</h2>";
+foreach ($tables as $table) {
+    echo "<h3>Table: $table</h3>";
+    try {
+        $stmt = $db->query("PRAGMA table_info($table)");
+        $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo "<table border='1' cellpadding='5' style='border-collapse: collapse;'>";
+        echo "<tr><th>Column</th><th>Type</th><th>Not Null</th><th>Default</th><th>Primary Key</th></tr>";
+        foreach ($columns as $col) {
+            echo "<tr>";
+            echo "<td>{$col['name']}</td>";
+            echo "<td>{$col['type']}</td>";
+            echo "<td>" . ($col['notnull'] ? 'Yes' : 'No') . "</td>";
+            echo "<td>" . ($col['dflt_value'] ?? 'NULL') . "</td>";
+            echo "<td>" . ($col['pk'] ? 'Yes' : 'No') . "</td>";
+            echo "</tr>";
+        }
+        echo "</table><br>";
+    } catch (PDOException $e) {
+        echo "❌ Error: " . $e->getMessage() . "<br>";
+    }
+}
+
+echo "<hr>";
+
+// Test 5: Count rows in each table
+echo "<h2>5. Row Counts</h2>";
+foreach ($tables as $table) {
+    try {
+        $stmt = $db->query("SELECT COUNT(*) as count FROM $table");
+        $count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        echo "Table <strong>$table</strong>: $count row(s)<br>";
+    } catch (PDOException $e) {
+        echo "❌ Error counting $table: " . $e->getMessage() . "<br>";
+    }
+}
+
+echo "<hr>";
+
+// Test 6: Try a write operation
+echo "<h2>6. Write Test</h2>";
+try {
+    $db->beginTransaction();
+
+    $testToken = 'test_' . time();
+    $stmt = $db->prepare("INSERT INTO tokens (token, project_id, customer_name) VALUES (?, ?, ?)");
+    $stmt->execute([$testToken, 'test_project', 'Test Customer']);
+
+    echo "✅ INSERT test successful (token: $testToken)<br>";
+
+    // Check if it was inserted
+    $stmt = $db->prepare("SELECT * FROM tokens WHERE token = ?");
+    $stmt->execute([$testToken]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($result) {
+        echo "✅ SELECT after INSERT successful<br>";
+        echo "Inserted data: " . json_encode($result) . "<br>";
+    }
+
+    // Rollback to not pollute database
+    $db->rollBack();
+    echo "✅ Transaction rolled back (test data removed)<br>";
+
+} catch (PDOException $e) {
+    echo "❌ Write test failed: " . $e->getMessage() . "<br>";
+    echo "Error code: " . $e->getCode() . "<br>";
+    try {
+        $db->rollBack();
+    } catch (Exception $e2) {
+        // Ignore rollback errors
+    }
+}
+
+echo "<hr>";
+
+// Test 7: Check PHP/SQLite info
+echo "<h2>7. PHP/SQLite Information</h2>";
+echo "PHP Version: " . phpversion() . "<br>";
+echo "PDO SQLite driver: " . (extension_loaded('pdo_sqlite') ? "✅ Loaded" : "❌ Not loaded") . "<br>";
+
+$sqliteVersion = $db->query('SELECT sqlite_version()')->fetch(PDO::FETCH_COLUMN);
+echo "SQLite Version: $sqliteVersion<br>";
+
+echo "<hr>";
+
+// Test 8: Check web server user
+echo "<h2>8. Server Information</h2>";
+echo "Current PHP user: " . get_current_user() . "<br>";
+echo "Script owner: " . (function_exists('posix_getpwuid') ? posix_getpwuid(fileowner(__FILE__))['name'] : 'N/A') . "<br>";
+
+if (function_exists('posix_getpwuid')) {
+    $processUser = posix_getpwuid(posix_geteuid());
+    echo "Process user: " . $processUser['name'] . "<br>";
+}
+
+echo "<hr>";
+echo "<h2>Diagnosis Complete</h2>";
+echo "<p>If you see 'Is writable: ❌ No' or 'Write test failed', run these commands:</p>";
+echo "<pre>chmod 666 db/ukstav.db\nchmod 777 db/</pre>";
+?>
+
+<style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h1 { color: #1e40af; }
+    h2 { color: #3b82f6; margin-top: 20px; }
+    table { margin: 10px 0; }
+    pre { background: #f3f4f6; padding: 10px; border-radius: 4px; }
+</style>
