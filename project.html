@@ -1,54 +1,153 @@
-<?php
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projekt — UKSTAV</title>
+    <meta name="description" content="Detail projektu UKSTAV — stavebné práce a rekonštrukcie v Bratislave a okolí.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="images/ukstav_logo_2.png">
+</head>
+<body>
+<header class="header header--simple" id="header" role="banner">
+    <div class="container">
+        <div class="header__content">
+            <a href="index.html" class="back-link" aria-label="Vrátiť sa na hlavnú stránku">← Späť</a>
+            <a href="index.html" class="brand" aria-label="UKSTAV">
+                <span class="brand__mark" aria-hidden="true">
+                    <svg viewBox="0 0 40 40" width="28" height="28" fill="none">
+                        <path d="M6 30V16.5L20 6l14 10.5V30H6Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+                        <path d="M15 30V20h10v10" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                <span class="brand__name">UKSTAV</span>
+            </a>
+            <a href="tel:+421950405659" class="header__phone" aria-label="Zavolať +421 950 405 659">+421 950 405 659</a>
+        </div>
+    </div>
+</header>
 
-require_once 'db-connect.php';
+<main role="main">
+    <section class="project-comments" id="commentFormContainer" style="display: none;">
+        <div class="container">
+            <div class="comment-form-wrapper">
+                <h3>Ohodnoťte tento projekt</h3>
+                <p>Vaša spätná väzba je pre nás dôležitá</p>
+                <form id="commentForm" class="comment-form">
+                    <div class="form-group">
+                        <label for="customerName" class="form-label">Vaše meno *</label>
+                        <input type="text" id="customerName" name="customer_name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Hodnotenie *</label>
+                        <div class="rating-input" id="ratingInput">
+                            <span class="rating-star" data-rating="1">★</span>
+                            <span class="rating-star" data-rating="2">★</span>
+                            <span class="rating-star" data-rating="3">★</span>
+                            <span class="rating-star" data-rating="4">★</span>
+                            <span class="rating-star" data-rating="5">★</span>
+                        </div>
+                        <input type="hidden" id="ratingValue" name="rating" value="0">
+                        <div class="error-message" id="rating-error" role="alert"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="commentText" class="form-label">Váš komentár *</label>
+                        <textarea id="commentText" name="comment_text" class="form-input" rows="5" required placeholder="Popíšte vašu skúsenosť s projektom..."></textarea>
+                        <div class="error-message" id="comment-error" role="alert"></div>
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--large">Odoslať hodnotenie</button>
+                </form>
+            </div>
+        </div>
+    </section>
 
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
-    exit;
-}
+    <section class="project-details">
+        <div class="container">
+            <div id="projectContent">
+                <div class="loading"><p>Načítavam projekt...</p></div>
+            </div>
+        </div>
+    </section>
 
-$token = isset($_GET['token']) ? trim($_GET['token']) : '';
-$projectId = isset($_GET['project_id']) ? trim($_GET['project_id']) : '';
+    <section class="project-comments">
+        <div class="container">
+            <h2 class="section-title">Hodnotenie zákazníka</h2>
+            <div id="commentsDisplay" class="comments-list">
+                <div id="commentsContainer"></div>
+                <div id="noComments" class="no-comments" style="display: none;">
+                    <p>Zatiaľ žiadne hodnotenie pre tento projekt.</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-if (empty($token) || empty($projectId)) {
-    echo json_encode(['success' => false, 'message' => 'Token a project_id sú povinné']);
-    exit;
-}
+    <section class="project-cta">
+        <div class="container">
+            <div class="cta-card">
+                <h2>Chcete podobný projekt?</h2>
+                <p>Pošlite požiadavku a získajte bezplatnú konzultáciu pre váš projekt</p>
+                <div class="cta-actions">
+                    <a href="index.html#contact" class="btn btn--primary">Získať rozpočet →</a>
+                    <a href="https://wa.me/421950405659" class="btn btn--ghost" target="_blank" rel="noopener">WhatsApp</a>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
 
-try {
-    $db = getDB();
+<footer class="footer footer--simple" role="contentinfo">
+    <div class="container">
+        <div class="footer__simple">
+            <div class="footer__info">
+                <h3>UKSTAV</h3>
+                <p class="footer__description">Profesionálne stavebné práce a rekonštrukcie v Bratislave od roku 2008.</p>
+            </div>
+            <div class="footer__contacts">
+                <h3>Kontakt</h3>
+                <address class="footer__address">
+                    <p>Obchodná 559/37, 811 06 Bratislava</p>
+                    <p><a href="tel:+421950405659">+421 950 405 659</a></p>
+                    <p><a href="mailto:ukstav.sk@gmail.com">ukstav.sk@gmail.com</a></p>
+                </address>
+            </div>
+            <div class="footer__social">
+                <h3>Sociálne siete</h3>
+                <div class="social-links">
+                    <a href="https://wa.me/421950405659" class="social-link" aria-label="WhatsApp" target="_blank" rel="noopener">WA</a>
+                    <a href="https://facebook.com/profile.php?id=61565539918906" class="social-link" aria-label="Facebook" target="_blank" rel="noopener">FB</a>
+                    <a href="https://instagram.com/uk_stav/" class="social-link" aria-label="Instagram" target="_blank" rel="noopener">IG</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer__bottom">
+            <p>&copy; 2026 UKSTAV. Všetky práva vyhradené.</p>
+        </div>
+    </div>
+</footer>
 
-    $stmt = $db->prepare("
-        SELECT id, customer_name, customer_email, is_used, project_id 
-        FROM tokens 
-        WHERE token = ? AND project_id = ?
-    ");
-    $stmt->execute([$token, $projectId]);
-    $tokenData = $stmt->fetch(PDO::FETCH_ASSOC);
+<div class="lightbox" id="lightbox" role="dialog" aria-labelledby="lightboxTitle" aria-hidden="true">
+    <div class="lightbox__backdrop" onclick="closeLightbox()"></div>
+    <div class="lightbox__content">
+        <button class="lightbox__close" onclick="closeLightbox()" aria-label="Zavrieť">×</button>
+        <button class="lightbox__prev" onclick="prevImage()" aria-label="Predchádzajúci obrázok">‹</button>
+        <button class="lightbox__next" onclick="nextImage()" aria-label="Nasledujúci obrázok">›</button>
+        <img class="lightbox__image" id="lightboxImage" alt="">
+        <div class="lightbox__caption" id="lightboxCaption"></div>
+        <div class="lightbox__counter" id="lightboxCounter"></div>
+    </div>
+</div>
 
-    if (!$tokenData) {
-        echo json_encode(['success' => false, 'message' => 'Neplatný token']);
-        exit;
-    }
-
-    if ($tokenData['is_used'] == 1) {
-        echo json_encode(['success' => false, 'message' => 'Token už bol použitý']);
-        exit;
-    }
-
-    echo json_encode([
-        'success' => true,
-        'data' => [
-            'customer_name' => $tokenData['customer_name'],
-            'customer_email' => $tokenData['customer_email']
-        ]
-    ]);
-
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Chyba servera: ' . $e->getMessage()]);
-}
-?>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5NBV82L2WM"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-5NBV82L2WM');
+</script>
+<script src="projects.js"></script>
+<script src="scripts.js"></script>
+</body>
+</html>

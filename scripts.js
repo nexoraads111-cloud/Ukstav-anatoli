@@ -392,10 +392,11 @@ class StavMasterWebsite {
     }
 
     handleNavigation(e) {
-        // Handle anchor links
-        if (e.target.matches('a[href^="#"]')) {
+        // Handle anchor links (support clicks on nested spans/icons inside <a>)
+        const anchor = e.target.closest && e.target.closest('a[href^="#"]');
+        if (anchor) {
             e.preventDefault();
-            const targetId = e.target.getAttribute('href');
+            const targetId = anchor.getAttribute('href');
             const targetElement = document.querySelector(targetId);
 
             if (targetElement) {
@@ -653,9 +654,10 @@ class StavMasterWebsite {
         const card = document.createElement('article');
         card.className = 'work-card animate-in';
         card.dataset.projectId = projectId;
+        const coverImage = (project.images && project.images[0]) || project.thumbnail;
         card.innerHTML = `
       <div class="work-card__image">
-        <img src="${project.thumbnail}" alt="${project.title}" loading="lazy" width="400" height="250">
+        <img src="${coverImage}" alt="${project.title}" loading="lazy" width="400" height="250">
       </div>
       <div class="work-card__gallery">
         ${project.gallery.map(thumb => `
