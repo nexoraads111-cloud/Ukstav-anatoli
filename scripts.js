@@ -138,7 +138,34 @@ class StavMasterWebsite {
         // Check if we're on project page
         if (window.location.pathname.includes('project.html')) {
             this.initProjectPage();
+        } else {
+            this.initSiteGallery();
         }
+    }
+
+    initSiteGallery() {
+        const gallery = document.getElementById('siteGallery');
+        if (!gallery) return;
+
+        const items = Array.from(gallery.querySelectorAll('[data-gallery-src]'));
+        if (!items.length) return;
+
+        this.lightboxImages = items.map(item => item.dataset.gallerySrc);
+        this.lightboxCaptions = items.map(item => {
+            const img = item.querySelector('img');
+            return img ? img.alt : '';
+        });
+
+        items.forEach((item, index) => {
+            const open = () => this.openLightbox(index);
+            item.addEventListener('click', open);
+            item.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    open();
+                }
+            });
+        });
     }
 
     setupEventListeners() {
@@ -363,9 +390,15 @@ class StavMasterWebsite {
         // Prevent body scrolling when menu is open
         document.body.style.overflow = isActive ? '' : 'hidden';
 
-        // Close menu when clicking outside
+        // Close menu when clicking outside (defer so the opening click does not immediately close)
         if (!isActive) {
-            document.addEventListener('click', this.closeMobileMenuOnOutsideClick.bind(this));
+            this._outsideMenuHandler = this.closeMobileMenuOnOutsideClick.bind(this);
+            setTimeout(() => {
+                document.addEventListener('click', this._outsideMenuHandler);
+            }, 0);
+        } else if (this._outsideMenuHandler) {
+            document.removeEventListener('click', this._outsideMenuHandler);
+            this._outsideMenuHandler = null;
         }
     }
 
@@ -373,9 +406,14 @@ class StavMasterWebsite {
         const nav = document.getElementById('nav');
         const toggle = document.getElementById('mobileMenuToggle');
 
+        if (!nav || !toggle) return;
+
         if (!nav.contains(e.target) && !toggle.contains(e.target)) {
             this.closeMobileMenu();
-            document.removeEventListener('click', this.closeMobileMenuOnOutsideClick.bind(this));
+            if (this._outsideMenuHandler) {
+                document.removeEventListener('click', this._outsideMenuHandler);
+                this._outsideMenuHandler = null;
+            }
         }
     }
 
@@ -388,6 +426,10 @@ class StavMasterWebsite {
             nav.classList.remove('active');
             toggle.setAttribute('aria-expanded', 'false');
             document.body.style.overflow = '';
+        }
+        if (this._outsideMenuHandler) {
+            document.removeEventListener('click', this._outsideMenuHandler);
+            this._outsideMenuHandler = null;
         }
     }
 
@@ -654,7 +696,7 @@ class StavMasterWebsite {
         const card = document.createElement('article');
         card.className = 'work-card animate-in';
         card.dataset.projectId = projectId;
-        const coverImage = (project.images && project.images[0]) || project.thumbnail;
+        const coverImage = project.thumbnail || (project.images && project.images[0]);
         card.innerHTML = `
       <div class="work-card__image">
         <img src="${coverImage}" alt="${project.title}" loading="lazy" width="400" height="250">
@@ -948,11 +990,14 @@ class StavMasterWebsite {
 
         if (image && this.lightboxImages) {
             image.src = this.lightboxImages[this.currentLightboxIndex];
-            image.alt = `Obrázok ${this.currentLightboxIndex + 1}`;
+            const label = (this.lightboxCaptions && this.lightboxCaptions[this.currentLightboxIndex])
+                || `Obrázok ${this.currentLightboxIndex + 1}`;
+            image.alt = label;
         }
 
         if (caption) {
-            caption.textContent = `Obrázok ${this.currentLightboxIndex + 1}`;
+            caption.textContent = (this.lightboxCaptions && this.lightboxCaptions[this.currentLightboxIndex])
+                || `Obrázok ${this.currentLightboxIndex + 1}`;
         }
 
         if (counter) {
