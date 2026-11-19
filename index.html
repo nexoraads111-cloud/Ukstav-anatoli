@@ -31,9 +31,11 @@
             <ul class="nav__list">
                 <li><a href="#services" class="nav__link">Služby</a></li>
                 <li><a href="#works" class="nav__link">Realizácie</a></li>
+                <li><a href="#gallery" class="nav__link">Galéria</a></li>
                 <li><a href="#team" class="nav__link">O nás</a></li>
                 <li><a href="#contact" class="nav__link">Kontakt</a></li>
             </ul>
+            <a href="#contact" class="btn btn--primary btn--nav-mobile">Nezáväzný rozpočet <span aria-hidden="true">→</span></a>
         </nav>
 
         <div class="header__actions">
@@ -94,7 +96,7 @@
                 <div class="services__main">
                     <h2 class="section-title">Naše služby</h2>
                     <div class="services__grid">
-                        <button type="button" class="service-card" data-filter="house" style="--card-image:url('images/service-house.jpg')">
+                        <button type="button" class="service-card" data-filter="house" style="--card-image:url('images/hero-house.jpg')">
                             <span class="service-card__shade"></span>
                             <span class="service-card__icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 11.5L12 5l8 6.5V20H4v-8.5z"/><path d="M10 20v-6h4v6"/></svg>
@@ -108,7 +110,7 @@
                             </span>
                             <span class="service-card__title">Rekonštrukcie</span>
                         </button>
-                        <button type="button" class="service-card" data-filter="facade" style="--card-image:url('images/service-facade.jpg')">
+                        <button type="button" class="service-card" data-filter="facade" style="--card-image:url('images/project10-4.jpeg')">
                             <span class="service-card__shade"></span>
                             <span class="service-card__icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="7" height="7"/><rect x="14" y="4" width="7" height="7"/><rect x="3" y="13" width="7" height="7"/><rect x="14" y="13" width="7" height="7"/></svg>
@@ -119,9 +121,9 @@
                 </div>
                 <aside class="services__feature">
                     <div class="services__feature-media">
-                        <img src="images/service-featured.jpg" alt="Realizácia rodinného domu UKSTAV" loading="lazy">
+                        <img src="images/hero-house.jpg" alt="Realizácia rodinného domu UKSTAV" loading="lazy">
                     </div>
-                    <p class="services__feature-label"><span>REALIZÁCIA 2025</span> / RODINNÝ DOM</p>
+                    <p class="services__feature-label"><span>REALIZÁCIA 2026</span> / RODINNÝ DOM</p>
                 </aside>
             </div>
         </div>
@@ -146,18 +148,45 @@
         <div class="container">
             <div class="section-heading">
                 <h2 class="section-title">Galéria</h2>
-                <p class="section-lead">Výber fotografií priamo z našich stavieb.</p>
+                <p class="section-lead">Hotové realizácie — interiéry a architektúra s dôrazom na detail.</p>
             </div>
             <div class="gallery-grid" id="siteGallery">
-                <figure class="gallery-item"><img src="images/ukstav_header_logo_3.jpg" alt="Hotová realizácia — záhradný objekt" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project2-8.jpg" alt="Hruba stavba — debnenie a výstuž" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project3-1.jpg" alt="Výstavba domu — krov" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project1-1.jpg" alt="Moderná kúpeľňa" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project5-1.jpeg" alt="Rekonštrukcia bytu" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project4-1.jpeg" alt="Chodníky okolo domu" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project7-1.jpeg" alt="Rekonštrukcia kuchyne" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project10-1.jpeg" alt="Rekonštrukcia masážneho salónu" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project8-1.jpeg" alt="Minimalistická kúpeľňa" loading="lazy"></figure>
+                <figure class="gallery-item gallery-item--feature" role="button" tabindex="0" data-gallery-src="images/hero-house.jpg" aria-label="Otvoriť: Luxusná vila — Bratislava">
+                    <img src="images/hero-house.jpg" alt="Luxusná vila — Bratislava" loading="lazy">
+                </figure>
+                <figure class="gallery-item" role="button" tabindex="0" data-gallery-src="images/project1-5.jpg" aria-label="Otvoriť: Moderná kúpeľňa — umývadlo a osvetlenie">
+                    <img src="images/project1-5.jpg" alt="Moderná kúpeľňa — umývadlo a osvetlenie" loading="lazy">
+                </figure>
+                <figure class="gallery-item" role="button" tabindex="0" data-gallery-src="images/project1-3.jpg" aria-label="Otvoriť: Dažďová sprcha s LED">
+                    <img src="images/project1-3.jpg" alt="Dažďová sprcha s LED" loading="lazy">
+                </figure>
+                <figure class="gallery-item" role="button" tabindex="0" data-gallery-src="images/project10-1.jpeg" aria-label="Otvoriť: Masážny salón — recepcia">
+                    <img src="images/project10-1.jpeg" alt="Masážny salón — recepcia" loading="lazy">
+                </figure>
+                <figure class="gallery-item" role="button" tabindex="0" data-gallery-src="images/project10-2.jpeg" aria-label="Otvoriť: Salón — oddychová zóna">
+                    <img src="images/project10-2.jpeg" alt="Salón — oddychová zóna" loading="lazy">
+                </figure>
+                <figure class="gallery-item gallery-item--wide" role="button" tabindex="0" data-gallery-src="images/project10-3.jpeg" aria-label="Otvoriť: Spálňa s otvorenou kúpeľňou">
+                    <img src="images/project10-3.jpeg" alt="Spálňa s otvorenou kúpeľňou" loading="lazy">
+                </figure>
+                <figure class="gallery-item" role="button" tabindex="0" data-gallery-src="images/project10-4.jpeg" aria-label="Otvoriť: Chodba — drevo a osvetlenie">
+                    <img src="images/project10-4.jpeg" alt="Chodba — drevo a osvetlenie" loading="lazy">
+                </figure>
+                <figure class="gallery-item" role="button" tabindex="0" data-gallery-src="images/project1-1.jpg" aria-label="Otvoriť: Luxusná kúpeľňa — celkový pohľad">
+                    <img src="images/project1-1.jpg" alt="Luxusná kúpeľňa — celkový pohľad" loading="lazy">
+                </figure>
+                <figure class="gallery-item" role="button" tabindex="0" data-gallery-src="images/project10-5.jpeg" aria-label="Otvoriť: Salón — nočný pohľad">
+                    <img src="images/project10-5.jpeg" alt="Salón — nočný pohľad" loading="lazy">
+                </figure>
+                <figure class="gallery-item" role="button" tabindex="0" data-gallery-src="images/project1-1-1.jpg" aria-label="Otvoriť: Detail dažďovej sprchy">
+                    <img src="images/project1-1-1.jpg" alt="Detail dažďovej sprchy" loading="lazy">
+                </figure>
+                <figure class="gallery-item" role="button" tabindex="0" data-gallery-src="images/project10-6.jpeg" aria-label="Otvoriť: Integrovaná kúpeľňa so sklom">
+                    <img src="images/project10-6.jpeg" alt="Integrovaná kúpeľňa so sklom" loading="lazy">
+                </figure>
+                <figure class="gallery-item" role="button" tabindex="0" data-gallery-src="images/service-reconstruction.jpg" aria-label="Otvoriť: Kúpeľňa — mramor a drevo">
+                    <img src="images/service-reconstruction.jpg" alt="Kúpeľňa — mramor a drevo" loading="lazy">
+                </figure>
             </div>
         </div>
     </section>
@@ -499,6 +528,18 @@
             <p id="successMessage">Vaša požiadavka bola prijatá! Spojíme sa s vami do 2 hodín.</p>
             <button class="btn btn--primary" onclick="closeSuccessModal()">Rozumiem</button>
         </div>
+    </div>
+</div>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-labelledby="lightboxCaption" aria-hidden="true">
+    <div class="lightbox__backdrop" onclick="closeLightbox()"></div>
+    <div class="lightbox__content">
+        <button class="lightbox__close" onclick="closeLightbox()" aria-label="Zavrieť">×</button>
+        <button class="lightbox__prev" onclick="prevImage()" aria-label="Predchádzajúci obrázok">‹</button>
+        <button class="lightbox__next" onclick="nextImage()" aria-label="Nasledujúci obrázok">›</button>
+        <img class="lightbox__image" id="lightboxImage" alt="">
+        <div class="lightbox__caption" id="lightboxCaption"></div>
+        <div class="lightbox__counter" id="lightboxCounter"></div>
     </div>
 </div>
 

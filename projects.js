@@ -11,15 +11,16 @@ const PROJECTS = {
         year: "2025",
         keywords: ["bathroom", "reconstruction", "tiles", "bathroom_kitchen"],
         images: [
+            "images/project1-5.jpg",
+            "images/project1-1.jpg",
+            "images/project1-3.jpg",
+            "images/project1-2.jpg",
+            "images/project1-1-1.jpg",
             "images/project1-0-1.jpeg",
             "images/project1-0-2.jpeg",
-            "images/project1-1.jpg",
-            "images/project1-2.jpg",
             "images/project1-2-1.jpeg",
-            "images/project1-3.jpg",
             "images/project1-4.jpg",
             "images/project1-4-1.jpeg",
-            "images/project1-5.jpg",
             "images/project1-6.jpg",
             "images/project1-7.jpg",
             "images/project1-8.jpg",
@@ -27,11 +28,11 @@ const PROJECTS = {
             "images/project1-10.jpg",
             "images/project1-11.jpg",
         ],
-        thumbnail: "images/project1-1-0.jpg",
+        thumbnail: "images/project1-5.jpg",
         gallery: [
+            "images/project1-1.jpg",
+            "images/project1-3.jpg",
             "images/project1-1-1.jpg",
-            "images/project1-1-2.jpg",
-            "images/project1-1-3.jpg",
         ]
     },
     project2: {
@@ -326,11 +327,11 @@ const PROJECTS = {
             "images/project10-12.jpeg",
             "images/project10-13.jpeg",
         ],
-        thumbnail: "images/project10-0.jpg",
+        thumbnail: "images/project10-1.jpeg",
         gallery: [
-            "images/project10-1-1.jpg",
-            "images/project10-1-2.jpg",
-            "images/project10-1-3.jpg",
+            "images/project10-2.jpeg",
+            "images/project10-3.jpeg",
+            "images/project10-4.jpeg",
         ]
     },
 };
