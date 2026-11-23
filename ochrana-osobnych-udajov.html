@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ochrana osobných údajov — UKSTAV</title>
-    <meta name="description" content="Informácie o spracúvaní osobných údajov spoločnosti UKSTAV SLOVAKIA s. r. o. (webové formuláre; Meta Ads lead formuláre sú plánované).">
+    <meta name="description" content="Informácie o spracúvaní osobných údajov spoločnosti UKSTAV SLOVAKIA s. r. o.">
     <meta name="robots" content="index,follow">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,52 +38,45 @@
             <p class="policy__intro">
                 Tieto informácie vysvetľujú, ako spoločnosť UKSTAV SLOVAKIA&nbsp;s.&nbsp;r.&nbsp;o.
                 spracúva osobné údaje návštevníkov a záujemcov získaných cez webovú stránku
-                <a href="https://ukstav.sk">ukstav.sk</a>. Lead formuláre v reklamách Meta
-                (Facebook / Instagram) sú plánované, ale v čase tejto aktualizácie ešte nie sú
-                zverejnené; po ich spustení budú tieto informácie doplnené.
-            </p>
-            <p class="policy__note">
-                Položky označené <strong>[DOPLNIŤ — …]</strong> musí prevádzkovateľ ešte potvrdiť
-                (údaje, ktoré nie je možné overiť zo stránky ani z kódu webu).
+                <a href="https://ukstav.sk">ukstav.sk</a>.
+                Uvádzame len skutočnosti overené na zverejnenej stránke a v kóde webu.
             </p>
 
             <section class="policy__section">
-                <h2>1. Prevádzkovateľ</h2>
+                <h2>1. Prevádzkovateľ a kontakt</h2>
                 <p>
-                    Prevádzkovateľom osobných údajov je (údaje podľa oficiálnej firemnej karty spoločnosti):<br>
+                    Prevádzkovateľom osobných údajov je:<br>
                     <strong>UKSTAV SLOVAKIA s. r. o.</strong><br>
                     Adresa sídla: Obchodná 559/37, 811 06 Bratislava – Staré Mesto<br>
                     IČO: 57&nbsp;177&nbsp;945<br>
-                    DIČ: 2122&nbsp;589&nbsp;9974<br>
+                    DIČ: 2122&nbsp;599&nbsp;974<br>
+                    IČ&nbsp;DPH: SK2122599974<br>
                     E-mail: <a href="mailto:ukstav.sk@gmail.com">ukstav.sk@gmail.com</a><br>
-                    Konatelia:<br>
+                    Telefóny:<br>
                     Anatolij Porokhnavets —
                     <a href="tel:+421950405659">+421&nbsp;950&nbsp;405&nbsp;659</a><br>
                     Mihajlo Kovač —
                     <a href="tel:+421951827835">+421&nbsp;951&nbsp;827&nbsp;835</a>
                 </p>
                 <p>
-                    IČ&nbsp;DPH: na firemnej karte nie je uvedené —
-                    <strong>[DOPLNIŤ — IČ DPH alebo „nie sme platiteľ DPH“]</strong><br>
-                    Zodpovedná osoba (DPO): na firemnej karte ani na webe nie je uvedená —
-                    <strong>[DOPLNIŤ — meno/kontakt DPO, alebo potvrdiť „nie je vymenovaná“]</strong><br>
-                    Kontakt na žiadosti týkajúce sa osobných údajov (GDPR):
+                    Zodpovedná osoba (DPO) <strong>nie je vymenovaná</strong>.
+                    Žiadosti týkajúce sa osobných údajov (GDPR) zasielajte na oficiálne pracovné kontakty spoločnosti:
                     <a href="mailto:ukstav.sk@gmail.com">ukstav.sk@gmail.com</a>
-                    (oficiálny e-mail spoločnosti z firemnej karty).
+                    alebo na telefóny uvedené vyššie.
                 </p>
             </section>
 
             <section class="policy__section">
                 <h2>2. Aké údaje spracúvame</h2>
-                <h3>2.1 Webové formuláre na stránke</h3>
+                <h3>2.1 Webové formuláre (dopyt / nezáväzný rozpočet)</h3>
                 <p>
-                    Na stránke sú dva formuláre. Pri ich odoslaní spracúvame údaje, ktoré ste vyplnili:
+                    Na stránke sú dva formuláre. Pri ich odoslaní zbierame údaje, ktoré ste vyplnili:
                 </p>
                 <ul>
                     <li>
                         <strong>Kontaktný formulár</strong> („Poslať požiadavku“):
                         meno (povinné), telefón (povinné), krátky popis projektu (nepovinné)
-                        a potvrdenie súhlasu so spracovaním osobných údajov (povinné zaškrtávacie pole).
+                        a potvrdenie zaškrtávacieho poľa na formulári (povinné v UI).
                         E-mailová adresa sa v tomto formulári nevyžaduje ani nezbiera.
                     </li>
                     <li>
@@ -92,150 +85,126 @@
                     </li>
                 </ul>
                 <p>
-                    Odoslané dopyty sa cez serverový skript odosielajú ako notifikácia
-                    (Telegram Bot API a WhatsApp Business Cloud API) oprávneným osobám prevádzkovateľa
-                    a zároveň sa zaznamenajú do serverového denníka dopytov.
+                    Prehliadač odošle údaje metódou POST na skript
+                    <code>send-telegram.php</code> na doméne ukstav.sk.
+                    V kóde je pripravené odoslanie notifikácie cez Telegram Bot API a WhatsApp Business Cloud API
+                    a zápis do serverového denníka. <strong>Na aktuálnom hostingu GitHub Pages sa však PHP nespúšťa</strong>
+                    (overené na živej stránke: odpoveď HTTP&nbsp;405 na POST). Automatické doručenie dopytu
+                    cez Telegram / WhatsApp preto na zverejnenom webe v čase tejto aktualizácie
+                    <strong>nefunguje</strong>. Alternatívne kontakty, ktoré fungujú: telefón, e-mail
+                    a odkaz WhatsApp (<code>wa.me</code>) na stránke.
                 </p>
 
-                <h3>2.2 Meta Ads lead formuláre (Facebook / Instagram)</h3>
+                <h3>2.2 Meta Instant Form</h3>
                 <p>
-                    Lead formuláre v reklamách Meta <strong>nie sú zatiaľ zverejnené</strong>
-                    (reklamy ešte nebežia). Po ich spustení budú spracúvané len polia,
-                    ktoré Meta lead formulár skutočne bude obsahovať.
-                    Verejný Facebook profil spoločnosti je dostupný na stránke
-                    (profil ID&nbsp;61565539918906); Instagram účet: @uk_stav.
-                    Identifikátory Meta Business / konkrétne polia lead formulára:
-                    <strong>[DOPLNIŤ — až po spustení Meta Ads lead formulárov]</strong>.
+                    Meta Instant Form (lead formuláre vo Facebook / Instagram reklamách)
+                    <strong>nie je nastavený ani zverejnený</strong>. Leady z reklám Meta cez Instant Form
+                    momentálne nespracúvame.
                 </p>
 
                 <h3>2.3 Technické a analytické údaje</h3>
-                <p>
-                    Pri návšteve stránky môžu byť spracúvané bežné technické údaje
-                    (napr. IP adresa, typ prehliadača, približné údaje o zariadení)
-                    a údaje z meracích nástrojov, ktoré sú v kóde webu nasadené:
-                </p>
                 <ul>
                     <li>
-                        <strong>Google Analytics (gtag.js)</strong> — meracie ID
-                        <code>G-5NBV82L2WM</code> (načítané na hlavnej stránke a na stránke projektu);
+                        <strong>Google Fonts</strong> — načítanie písma z Google pri zobrazení stránky
+                        (overené na živej stránke).
                     </li>
                     <li>
-                        <strong>Google Fonts</strong> — načítanie písma z fontov Google
-                        (technické spojenie s Google pri zobrazení stránky).
+                        <strong>Google Analytics</strong> (meracie ID <code>G-5NBV82L2WM</code>) —
+                        načítava sa <strong>iba po udelení súhlasu</strong> v cookie lište na stránke
+                        (čl.&nbsp;6 ods.&nbsp;1 písm.&nbsp;a GDPR). Bez súhlasu sa analytický skript nenačíta.
+                    </li>
+                    <li>
+                        Meta Pixel nie je nasadený.
                     </li>
                 </ul>
-                <p>
-                    Meta Pixel (fbq) ani iné reklamné meracie skripty v kóde webu
-                    v čase tejto aktualizácie <strong>nie sú nasadené</strong>.
-                    Cookie lišta / správca súhlasov s cookies na stránke nie je.
-                </p>
             </section>
 
             <section class="policy__section">
                 <h2>3. Účel a právny základ</h2>
                 <ul>
                     <li>
-                        <strong>Vybavenie dopytu / obchodný kontakt</strong> — odpoveď na Vašu požiadavku,
-                        spätné volanie a príprava ponuky.
-                        Pri kontaktnom formulári je súhlas so spracovaním osobných údajov
-                        povinné pole; právny základ zahŕňa súhlas (čl.&nbsp;6 ods.&nbsp;1 písm.&nbsp;a GDPR)
-                        a prijatie opatrení pred uzavretím zmluvy na Vašu žiadosť
-                        (čl.&nbsp;6 ods.&nbsp;1 písm.&nbsp;b GDPR).
-                        Pri rýchlom formulári „Zanechať číslo“ ide o vybavenie Vašej žiadosti
-                        o spätné volanie (čl.&nbsp;6 ods.&nbsp;1 písm.&nbsp;b GDPR).
-                        Meta leady: zatiaľ neaktívne —
-                        <strong>[DOPLNIŤ — právny základ po spustení Meta lead formulárov]</strong>.
+                        <strong>Vybavenie dopytu / nezáväzný rozpočet / spätné volanie</strong> —
+                        právny základ: prijatie opatrení pred uzavretím zmluvy na žiadosť
+                        dotknutej osoby (čl.&nbsp;6 ods.&nbsp;1 písm.&nbsp;b GDPR).
+                        Zaškrtávacie pole na kontaktnom formulári nie je primárnym právnym základom.
+                    </li>
+                    <li>
+                        <strong>Google Analytics</strong> — súhlas (čl.&nbsp;6 ods.&nbsp;1 písm.&nbsp;a GDPR)
+                        udelený cez cookie lištu. Oprávnený záujem ako náhradu súhlasu pre GA neuvedáme.
                     </li>
                     <li>
                         <strong>Marketingová komunikácia</strong> nad rámec odpovede na konkrétny dopyt
-                        sa podľa aktuálneho obsahu webu nevykonáva
-                        (žiadny newsletter ani samostatná marketingová kampaň nie je na stránke nastavená).
+                        sa podľa aktuálneho obsahu webu nevykonáva.
                     </li>
                     <li>
-                        <strong>Štatistika a zlepšovanie webu</strong> — Google Analytics je načítaný
-                        v kóde stránky. Cookie lišta so súhlasom nie je nasadená;
-                        právny základ merania:
-                        <strong>[DOPLNIŤ — súhlas alebo oprávnený záujem podľa Vášho rozhodnutia / nastavenia]</strong>.
-                    </li>
-                    <li>
-                        <strong>Plnenie právnych povinností</strong> (ak vzniknú, napr. účtovné alebo daňové) —
+                        <strong>Plnenie právnych povinností</strong> (ak vzniknú) —
                         čl.&nbsp;6 ods.&nbsp;1 písm.&nbsp;c GDPR.
                     </li>
                 </ul>
             </section>
 
             <section class="policy__section">
-                <h2>4. Príjemcovia a sprostredkovatelia</h2>
-                <p>Údaje môžu byť sprístupnené:</p>
+                <h2>4. Príjemcovia</h2>
+                <p>Podľa overenia živej stránky a kódu môžu byť údaje sprístupnené:</p>
                 <ul>
                     <li>
-                        konateľom a oprávneným osobám prevádzkovateľa
-                        (Anatolij Porokhnavets, Mihajlo Kovač — podľa oficiálnej firemnej karty),
+                        konateľom a oprávneným osobám prevádzkovateľa (kontakty v časti&nbsp;1),
                     </li>
                     <li>
-                        poskytovateľom služieb, cez ktoré sa dopyty a stránka reálne doručujú / merajú:
-                        <ul>
-                            <li>Telegram (Bot API) — notifikácia o novom dopyte z webu,</li>
-                            <li>WhatsApp Business Cloud API (Meta Platforms) — notifikácia o novom dopyte,</li>
-                            <li>Google Ireland Ltd. / Google — Google Analytics (G-5NBV82L2WM) a Google Fonts,</li>
-                            <li>GitHub Pages — hosting statickej webovej stránky ukstav.sk,</li>
-                            <li>e-mailová schránka <a href="mailto:ukstav.sk@gmail.com">ukstav.sk@gmail.com</a> (Gmail) — verejný kontakt, nie cieľ odoslania webového formulára.</li>
-                        </ul>
+                        <strong>Google</strong> — Google Fonts; Google Analytics len po súhlase,
                     </li>
                     <li>
-                        spoločnosti Meta Platforms Ireland Ltd. (a súvisiacim subjektom Meta)
-                        v rozsahu verejnej Facebook / Instagram stránky a WhatsApp Business API;
-                        lead formuláre z reklám Meta zatiaľ nie sú aktívne, preto sa leady z Meta
-                        zatiaľ neexportujú (manuálne / CRM / webhook).
-                        Po spustení: <strong>[DOPLNIŤ — spôsob príjmu Meta leadov]</strong>.
+                        <strong>GitHub Pages</strong> — hosting statickej stránky ukstav.sk
+                        (odpoveď servera: GitHub.com),
                     </li>
                     <li>
-                        prípadne ďalším subjektom mimo kódu webu
-                        (napr. účtovník, právny zástupca):
-                        <strong>[DOPLNIŤ — zoznam, alebo „žiadni ďalší“]</strong>.
+                        <strong>Gmail</strong> (<a href="mailto:ukstav.sk@gmail.com">ukstav.sk@gmail.com</a>) —
+                        ak nám napíšete e-mail,
+                    </li>
+                    <li>
+                        <strong>WhatsApp</strong> — ak použijete odkaz <code>wa.me</code> na stránke
+                        (priame chatové spojenie; nie automatický export z webového formulára).
                     </li>
                 </ul>
+                <p>
+                    Telegram Bot API / WhatsApp Business Cloud API ako automatické notifikácie z formulára
+                    sú v kóde pripravené, ale na živej GitHub Pages inštancii sa nespúšťajú
+                    (pozri časť&nbsp;2.1). Meta Instant Form nie je aktívny.
+                    Ďalší príjemcovia (napr. účtovník, právnik, CRM, agentúra) nad rámec vyššie
+                    overených služieb a kontaktov <strong>nie sú</strong>.
+                </p>
             </section>
 
             <section class="policy__section">
                 <h2>5. Prenos mimo EÚ / EHP</h2>
                 <p>
-                    Pri používaní služieb Telegram, WhatsApp / Meta, Google Analytics, Google Fonts
-                    a hostingu GitHub Pages môže dôjsť k spracúvaniu údajov aj mimo EÚ/EHP
-                    (podľa podmienok týchto poskytovateľov). V takom prípade sa majú uplatňovať
-                    primerané záruky podľa GDPR (napr. štandardné zmluvné doložky), ak sú relevantné.
-                    Konkrétne zmluvné záruky u jednotlivých poskytovateľov:
-                    <strong>[DOPLNIŤ — potvrdenie záruk / SCC u používaných služieb]</strong>.
+                    Pri používaní Google Fonts, Google Analytics (po súhlase), GitHub Pages,
+                    Gmail a WhatsApp môže dôjsť k spracúvaniu údajov aj mimo EÚ/EHP
+                    podľa podmienok týchto poskytovateľov. Verejne dostupné stránky poskytovateľov
+                    môžu odkazovať na zmluvné mechanizmy (napr. DPA), no
+                    <strong>v tejto verzii neuvádzame konkrétne SCC ani iné záruky</strong>,
+                    kým ich prevádzkovateľ neoverí voči svojim zmluvám / nastaveniam služieb.
                 </p>
             </section>
 
             <section class="policy__section">
                 <h2>6. Doba uchovávania</h2>
                 <p>
-                    Osobné údaje uchovávame len po dobu nevyhnutnú na daný účel.
-                    V kóde webu nie je nastavené automatické mazanie dopytov po uplynutí lehoty;
-                    konkrétne lehoty musí prevádzkovateľ potvrdiť:
+                    Údaje z webových dopytov (meno, telefón, popis, čas volania) uchovávame
+                    <strong>12&nbsp;mesiacov od vybavenia dopytu</strong> (alebo od odoslania, ak dopyt
+                    nebol vybavený), potom ich vymažeme alebo anonymizujeme, pokiaľ zákon nevyžaduje
+                    dlhšie uchovanie. Túto lehotu musí prevádzkovateľ skutočne dodržiavať
+                    (vrátane notifikácií a denníkov, ak sú používané).
                 </p>
-                <ul>
-                    <li>
-                        dopyty z webu (notifikácie + serverový denník):
-                        <strong>[DOPLNIŤ — napr. X mesiacov od vybavenia dopytu]</strong>,
-                    </li>
-                    <li>
-                        leady z Meta Ads: zatiaľ neaktívne —
-                        <strong>[DOPLNIŤ — po spustení]</strong>,
-                    </li>
-                    <li>
-                        marketing nad rámec dopytu: aktuálne sa nevykonáva,
-                    </li>
-                    <li>
-                        analytické údaje (Google Analytics):
-                        <strong>[DOPLNIŤ — podľa nastavenia retenácie v účte GA]</strong>,
-                    </li>
-                    <li>
-                        údaje potrebné podľa zákona: podľa príslušných lehôt.
-                    </li>
-                </ul>
+                <p>
+                    Retencia Google Analytics: nastavenie v účte GA
+                    <strong>nebolo z tohto prostredia prístupné</strong> (chýbajú prihlasovacie údaje
+                    do Google Analytics). Doplní sa podľa skutočnej hodnoty v administrácii GA
+                    (Admin → Data Settings → Data retention).
+                </p>
+                <p>
+                    Meta Instant Form / leady: odložené — lehota sa doplní až po spustení formulára.
+                </p>
             </section>
 
             <section class="policy__section">
@@ -246,31 +215,28 @@
                     <li>na opravu nepresných údajov,</li>
                     <li>na vymazanie (za podmienok GDPR),</li>
                     <li>na obmedzenie spracúvania,</li>
-                    <li>namietať proti spracúvaniu založenému na oprávnenom záujme,</li>
+                    <li>namietať proti spracúvaniu založenému na oprávnenom záujme (ak by sa uplatňoval),</li>
                     <li>na prenosnosť údajov (ak je spracúvanie založené na súhlase alebo zmluve a prebieha automatizovane),</li>
-                    <li>kedykoľvek odvolať súhlas, ak je spracúvanie založené na súhlase (bez vplyvu na zákonnosť pred odvolaním),</li>
+                    <li>kedykoľvek odvolať súhlas (napr. analytika) bez vplyvu na zákonnosť pred odvolaním,</li>
                     <li>
                         podať sťažnosť na Úrad na ochranu osobných údajov SR
                         (<a href="https://dataprotection.gov.sk" target="_blank" rel="noopener">dataprotection.gov.sk</a>).
                     </li>
                 </ul>
                 <p>
-                    Žiadosti môžete zaslať na oficiálny e-mail spoločnosti
-                    <a href="mailto:ukstav.sk@gmail.com">ukstav.sk@gmail.com</a>
-                    (časť 1 — firemná karta) alebo telefonicky na kontakty konateľov.
-                    Lehota na vybavenie: spravidla do 1 mesiaca.
+                    Žiadosti: <a href="mailto:ukstav.sk@gmail.com">ukstav.sk@gmail.com</a>
+                    alebo telefóny v časti&nbsp;1. Lehota na vybavenie: spravidla do 1 mesiaca.
                 </p>
             </section>
 
             <section class="policy__section">
-                <h2>8. Cookies a podobné technológie</h2>
+                <h2>8. Cookies a súhlas s analytikou</h2>
                 <p>
-                    Na stránke <strong>nie je cookie lišta</strong> ani nástroj na správu súhlasov s cookies.
-                    Okrem bežných technických údajov prehliadača stránka načítava
-                    <strong>Google Analytics (gtag.js, ID G-5NBV82L2WM)</strong>, ktorý môže ukladať
-                    analytické cookies / identifikátory (typicky napr. <code>_ga</code>,
-                    <code>_ga_*</code> podľa nastavenia Google).
-                    Meta Pixel cookies nie sú nasadené.
+                    Stránka zobrazuje lištu na súhlas s Google Analytics. Analytické cookies / skript
+                    (<code>G-5NBV82L2WM</code>) sa načítajú až po kliknutí na „Prijať analytiku“.
+                    Pri voľbe „Odmietnuť“ sa GA nenačíta. Voľbu ukladáme v prehliadači
+                    (<code>localStorage</code>). Meta Pixel nie je nasadený.
+                    Google Fonts sa načítava kvôli zobrazeniu písma (technické spojenie s Google).
                 </p>
             </section>
 
@@ -285,10 +251,8 @@
             <section class="policy__section">
                 <h2>10. Automatizované rozhodovanie</h2>
                 <p>
-                    Podľa aktuálneho nastavenia webu nevykonávame rozhodovanie založené výlučne
-                    na automatizovanom spracúvaní vrátane profilovania, ktoré by malo právne účinky
-                    alebo podobne významný vplyv na Vás. Formuláre slúžia na doručenie dopytu ľuďom
-                    v tíme prevádzkovateľa (notifikácia cez Telegram / WhatsApp).
+                    Nevykonávame rozhodovanie založené výlučne na automatizovanom spracúvaní
+                    vrátane profilovania s právnymi účinkami alebo podobne významným vplyvom na Vás.
                 </p>
             </section>
 
@@ -299,8 +263,7 @@
                     na tejto stránke bez registrácie.
                 </p>
                 <p>
-                    Dátum poslednej aktualizácie: <strong>22.&nbsp;11.&nbsp;2026</strong>
-                    (doplnené overenie identity podľa oficiálnej firemnej karty)
+                    Dátum poslednej aktualizácie: <strong>23.&nbsp;11.&nbsp;2026</strong>
                 </p>
             </section>
         </div>
@@ -315,5 +278,6 @@
         </div>
     </div>
 </footer>
+<script src="cookie-consent.js"></script>
 </body>
 </html>
