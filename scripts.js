@@ -514,11 +514,7 @@ class StavMasterWebsite {
         submitBtn.disabled = true;
 
         try {
-            // Simulate API call
-            await this.submitFormData(data);
-
-            // Save locally for demo
-            Utils.saveToLocalFile(data);
+            await this.submitFormData({ ...data, source: 'contact' });
 
             // Show success
             this.showSuccessModal();
@@ -534,7 +530,7 @@ class StavMasterWebsite {
             });
 
         } catch (error) {
-            this.showFormError('Nastala chyba pri odosielaní. Skúste znova.');
+            this.showFormError(error?.message || 'Nastala chyba pri odosielaní. Skúste znova.');
             console.error('Form submission error:', error);
         } finally {
             submitBtn.textContent = originalText;
@@ -561,13 +557,12 @@ class StavMasterWebsite {
         submitBtn.disabled = true;
 
         try {
-            await this.submitFormData(data);
-            Utils.saveToLocalFile(data);
+            await this.submitFormData({ ...data, source: 'quick' });
             this.closeContactModal();
             this.showSuccessModal(data.callback_time);
             form.reset();
         } catch (error) {
-            alert('Nastala chyba pri odosielaní. Skúste znova.');
+            alert(error?.message || 'Nastala chyba pri odosielaní. Skúste znova.');
             console.error('Quick form submission error:', error);
         } finally {
             submitBtn.textContent = originalText;
@@ -576,25 +571,18 @@ class StavMasterWebsite {
     }
 
     async submitFormData(data) {
-        const response = await fetch('https://ukstav.sk/send-telegram.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
-        });
-
-        if (!response.ok) {
-            throw new Error('Network response was not ok' + JSON.stringify(response));
+        const api = window.UkstavLeads;
+        if (!api?.configured) {
+            throw new Error(
+                'Formulár ešte nie je napojený. Doplňte js/supabase-config.js (pozri SUPABASE.md) alebo nás kontaktujte telefonicky / WhatsApp.',
+            );
         }
-
-        const result = await response.json();
-
-        if (!result.success) {
-            throw new Error(result.message || 'Unknown error');
+        try {
+            return await api.submitLead(data);
+        } catch (err) {
+            const detail = api.formatError ? api.formatError(err) : err?.message || String(err);
+            throw new Error(detail);
         }
-
-        return result;
     }
 
     showFormError(message) {

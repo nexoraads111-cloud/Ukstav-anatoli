@@ -85,14 +85,20 @@
                     </li>
                 </ul>
                 <p>
-                    Prehliadač odošle údaje metódou POST na skript
-                    <code>send-telegram.php</code> na doméne ukstav.sk.
-                    V kóde je pripravené odoslanie notifikácie cez Telegram Bot API a WhatsApp Business Cloud API
-                    a zápis do serverového denníka. <strong>Na aktuálnom hostingu GitHub Pages sa však PHP nespúšťa</strong>
-                    (overené na živej stránke: odpoveď HTTP&nbsp;405 na POST). Automatické doručenie dopytu
-                    cez Telegram / WhatsApp preto na zverejnenom webe v čase tejto aktualizácie
-                    <strong>nefunguje</strong>. Alternatívne kontakty, ktoré fungujú: telefón, e-mail
-                    a odkaz WhatsApp (<code>wa.me</code>) na stránke.
+                    Prehliadač uloží dopyt priamo do databázy <strong>Supabase</strong>
+                    (Postgres v EÚ regióne podľa nastavenia projektu) cez oficiálne klientské API
+                    s anonymným kľúčom a pravidlami Row Level Security: verejnosť môže iba
+                    <em>vytvoriť</em> nový záznam, čítať/mazať dopyty môže iba prihlásený správca
+                    na stránke <code>admin.html</code>.
+                    Starý skript <code>send-telegram.php</code> na GitHub Pages <strong>nefunguje</strong>
+                    (PHP sa nespúšťa; endpoint je vyradený a bez tajomstiev v kóde).
+                    Voliteľné notifikácie Telegram je možné doplniť cez Supabase Edge Function
+                    so serverovými secrets — nie sú predvolene zapnuté.
+                    Alternatívne kontakty: telefón, e-mail a WhatsApp (<code>wa.me</code>) na stránke.
+                </p>
+                <p>
+                    Ak ešte nie je doplnená konfigurácia Supabase v <code>js/supabase-config.js</code>,
+                    formulár dopyt neuloží a zobrazí chybu; dovtedy použite telefón / e-mail / WhatsApp.
                 </p>
 
                 <h3>2.2 Meta Instant Form</h3>
@@ -148,7 +154,12 @@
                 <p>Podľa overenia živej stránky a kódu môžu byť údaje sprístupnené:</p>
                 <ul>
                     <li>
-                        konateľom a oprávneným osobám prevádzkovateľa (kontakty v časti&nbsp;1),
+                        konateľom a oprávneným osobám prevádzkovateľa (kontakty v časti&nbsp;1)
+                        cez admin panel <code>admin.html</code>,
+                    </li>
+                    <li>
+                        <strong>Supabase</strong> (Postgres + Auth) — úložisko dopytov z formulárov
+                        a prihlásenie správcu; spracúvanie podľa zmluvných podmienok a DPA Supabase,
                     </li>
                     <li>
                         <strong>Google</strong> — Google Fonts; Google Analytics len po súhlase,
@@ -167,22 +178,22 @@
                     </li>
                 </ul>
                 <p>
-                    Telegram Bot API / WhatsApp Business Cloud API ako automatické notifikácie z formulára
-                    sú v kóde pripravené, ale na živej GitHub Pages inštancii sa nespúšťajú
-                    (pozri časť&nbsp;2.1). Meta Instant Form nie je aktívny.
+                    Automatické notifikácie Telegram / WhatsApp Business Cloud API z formulára
+                    <strong>nie sú</strong> aktívne na GitHub Pages (starý PHP endpoint je vyradený).
+                    Meta Instant Form nie je aktívny.
                     Ďalší príjemcovia (napr. účtovník, právnik, CRM, agentúra) nad rámec vyššie
-                    overených služieb a kontaktov <strong>nie sú</strong>.
+                    uvedených služieb a kontaktov <strong>nie sú</strong>.
                 </p>
             </section>
 
             <section class="policy__section">
                 <h2>5. Prenos mimo EÚ / EHP</h2>
                 <p>
-                    Pri používaní Google Fonts, Google Analytics (po súhlase), GitHub Pages,
+                    Pri používaní Supabase, Google Fonts, Google Analytics (po súhlase), GitHub Pages,
                     Gmail a WhatsApp môže dôjsť k spracúvaniu údajov aj mimo EÚ/EHP
-                    podľa podmienok týchto poskytovateľov. Verejne dostupné stránky poskytovateľov
-                    môžu odkazovať na zmluvné mechanizmy (napr. DPA), no
-                    <strong>v tejto verzii neuvádzame konkrétne SCC ani iné záruky</strong>,
+                    podľa podmienok týchto poskytovateľov (Supabase odporúčame s regiónom v EÚ).
+                    Verejne dostupné stránky poskytovateľov môžu odkazovať na zmluvné mechanizmy
+                    (napr. DPA), no <strong>v tejto verzii neuvádzame konkrétne SCC ani iné záruky</strong>,
                     kým ich prevádzkovateľ neoverí voči svojim zmluvám / nastaveniam služieb.
                 </p>
             </section>
@@ -263,7 +274,7 @@
                     na tejto stránke bez registrácie.
                 </p>
                 <p>
-                    Dátum poslednej aktualizácie: <strong>23.&nbsp;11.&nbsp;2026</strong>
+                    Dátum poslednej aktualizácie: <strong>24.&nbsp;11.&nbsp;2026</strong>
                 </p>
             </section>
         </div>

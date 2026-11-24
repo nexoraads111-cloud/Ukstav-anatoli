@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="sk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Admin dopytov | UKSTAV</title>
+    <link rel="icon" type="image/png" href="images/ukstav_logo_2.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./css/admin.css?v=1" />
+  </head>
+  <body>
+    <div class="admin-shell">
+      <header class="admin-top">
+        <a class="admin-brand" href="./index.html" aria-label="UKSTAV — web">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <path d="M6 30V16.5L20 6l14 10.5V30H6Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M15 30V20h10v10" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+          </svg>
+          <span>
+            <strong>UKSTAV</strong>
+            <span>Správa dopytov</span>
+          </span>
+        </a>
+        <div class="admin-top-actions">
+          <a class="btn btn-outline" href="./index.html">← Späť na web</a>
+          <button type="button" class="btn btn-primary hidden" id="logout">Odhlásiť</button>
+        </div>
+      </header>
+
+      <main class="panel">
+        <h1>Dopyty z webu</h1>
+        <p class="lead">
+          Prihláste sa a spravujte požiadavky z kontaktného formulára a „Zanechať číslo“.
+          Údaje sú v Supabase (GitHub Pages nevie spúšťať PHP). Postup: <code>SUPABASE.md</code>.
+        </p>
+
+        <div id="admin-msg" class="msg" role="status" aria-live="polite"></div>
+
+        <div id="config-missing" class="hidden">
+          <p class="lead">
+            Chýba konfigurácia Supabase. Skopírujte
+            <code>js/supabase-config.example.js</code> → <code>js/supabase-config.js</code>
+            a doplňte Project URL + anon kľúč. Potom v SQL Editori spustite
+            <code>supabase/setup.sql</code> a vytvorte admin účet (Authentication → Users).
+          </p>
+        </div>
+
+        <section id="login-view">
+          <form id="login-form" class="form">
+            <h2>Prihlásenie správcu</h2>
+            <p class="hint">
+              Heslo je účet v Supabase Authentication (e-mail + heslo). Verejná registrácia
+              musí byť vypnutá — účet založíte v Dashboard → Authentication → Users.
+            </p>
+            <label>
+              E-mail
+              <input id="email" name="email" type="email" autocomplete="username" required />
+            </label>
+            <label>
+              Heslo
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                required
+              />
+            </label>
+            <button type="submit" class="btn btn-primary">Prihlásiť</button>
+          </form>
+        </section>
+
+        <section id="app-view" class="hidden">
+          <p id="user-line" class="user-line"></p>
+
+          <div class="list-head">
+            <h2>Zoznam dopytov <span id="list-count" class="list-count"></span></h2>
+            <div class="list-tools">
+              <label class="visually-hidden" for="filter-status">Filter stavu</label>
+              <select id="filter-status" aria-label="Filter stavu">
+                <option value="all">Všetky</option>
+                <option value="new">Nové</option>
+                <option value="contacted">Kontaktované</option>
+                <option value="done">Vybavené</option>
+                <option value="spam">Spam</option>
+              </select>
+              <button type="button" class="btn btn-outline" id="refresh">Obnoviť</button>
+            </div>
+          </div>
+          <p id="list-empty" class="empty hidden">Zatiaľ žiadne dopyty.</p>
+          <div id="leads-list" class="leads"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./js/supabase-config.js?v=1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="./js/supabase-client.js?v=1"></script>
+    <script src="./js/admin.js?v=1"></script>
+    <script>
+      const logoutBtn = document.getElementById('logout')
+      const appView = document.getElementById('app-view')
+      const mo = new MutationObserver(() => {
+        logoutBtn.classList.toggle('hidden', appView.classList.contains('hidden'))
+      })
+      mo.observe(appView, { attributes: true, attributeFilter: ['class'] })
+    </script>
+  </body>
+</html>
