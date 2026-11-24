@@ -502,7 +502,7 @@ body:has(.header--simple) main {
 /* ===== SERVICES ===== */
 .services {
     position: relative;
-    background: linear-gradient(180deg, #050505 0%, #090909 100%);
+    background: linear-gradient(180deg, #141414 0%, #1a1a1a 100%);
     overflow: hidden;
 }
 

@@ -48,7 +48,7 @@
 <main role="main">
     <section class="hero" id="hero">
         <div class="hero__media" aria-hidden="true">
-            <img src="images/hero-house.jpg" alt="" class="hero__img">
+            <img src="images/hero-house.jpg" alt="" class="hero__img" data-image-slot="hero">
             <div class="hero__veil"></div>
         </div>
         <div class="container hero__content">
@@ -94,21 +94,21 @@
                 <div class="services__main">
                     <h2 class="section-title">Naše služby</h2>
                     <div class="services__grid">
-                        <button type="button" class="service-card" data-filter="house" style="--card-image:url('images/service-house.jpg')">
+                        <button type="button" class="service-card" data-filter="house" data-image-slot="service-house" style="--card-image:url('images/service-house.jpg')">
                             <span class="service-card__shade"></span>
                             <span class="service-card__icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 11.5L12 5l8 6.5V20H4v-8.5z"/><path d="M10 20v-6h4v6"/></svg>
                             </span>
                             <span class="service-card__title">Domy na kľúč</span>
                         </button>
-                        <button type="button" class="service-card" data-filter="reconstruction" style="--card-image:url('images/service-reconstruction.jpg')">
+                        <button type="button" class="service-card" data-filter="reconstruction" data-image-slot="service-reconstruction" style="--card-image:url('images/service-reconstruction.jpg')">
                             <span class="service-card__shade"></span>
                             <span class="service-card__icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14.5 4.5l5 5-9.5 9.5H5v-5L14.5 4.5z"/><path d="M12.5 6.5l5 5"/></svg>
                             </span>
                             <span class="service-card__title">Rekonštrukcie</span>
                         </button>
-                        <button type="button" class="service-card" data-filter="facade" style="--card-image:url('images/service-facade.jpg')">
+                        <button type="button" class="service-card" data-filter="facade" data-image-slot="service-facade" style="--card-image:url('images/service-facade.jpg')">
                             <span class="service-card__shade"></span>
                             <span class="service-card__icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="7" height="7"/><rect x="14" y="4" width="7" height="7"/><rect x="3" y="13" width="7" height="7"/><rect x="14" y="13" width="7" height="7"/></svg>
@@ -119,7 +119,7 @@
                 </div>
                 <aside class="services__feature">
                     <div class="services__feature-media">
-                        <img src="images/service-featured.jpg" alt="Realizácia rodinného domu UKSTAV" loading="lazy">
+                        <img src="images/service-featured.jpg" alt="Realizácia rodinného domu UKSTAV" loading="lazy" data-image-slot="service-featured">
                     </div>
                     <p class="services__feature-label"><span>REALIZÁCIA 2025</span> / RODINNÝ DOM</p>
                 </aside>
@@ -171,7 +171,7 @@
             <div class="team__grid">
                 <article class="team-card">
                     <div class="team-card__avatar">
-                        <img src="images/team-member-1.jpg" alt="Anatolij Porokhnavets" loading="lazy" width="300" height="300">
+                        <img src="images/team-member-1.jpg" alt="Anatolij Porokhnavets" loading="lazy" width="300" height="300" data-image-slot="team-1">
                     </div>
                     <h3 class="team-card__name">Anatolij Porokhnavets</h3>
                     <p class="team-card__role">Zakladateľ a vedúci projektov, konateľ</p>
@@ -179,7 +179,7 @@
                 </article>
                 <article class="team-card">
                     <div class="team-card__avatar">
-                        <img src="images/team-member-2.jpg" alt="Mihajlo Kovač" loading="lazy" width="300" height="300">
+                        <img src="images/team-member-2.jpg" alt="Mihajlo Kovač" loading="lazy" width="300" height="300" data-image-slot="team-2">
                     </div>
                     <h3 class="team-card__name">Mihajlo Kovač</h3>
                     <p class="team-card__role">Spoluzakladateľ a hlavný inžinier, konateľ</p>
@@ -187,7 +187,7 @@
                 </article>
                 <article class="team-card">
                     <div class="team-card__avatar">
-                        <img src="images/team-member-3.jpg" alt="Oleksandr Zmenytko" loading="lazy" width="300" height="300">
+                        <img src="images/team-member-3.jpg" alt="Oleksandr Zmenytko" loading="lazy" width="300" height="300" data-image-slot="team-3">
                     </div>
                     <h3 class="team-card__name">Oleksandr Zmenytko</h3>
                     <p class="team-card__role">Obkladač</p>
@@ -511,11 +511,12 @@
     </div>
 </div>
 
-<script src="js/supabase-config.js?v=1"></script>
+<script src="js/supabase-config.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/supabase-client.js?v=1"></script>
+<script src="js/supabase-client.js?v=2"></script>
 <script src="projects.js"></script>
 <script src="scripts.js"></script>
+<script src="js/site-images.js?v=2"></script>
 <script src="cookie-consent.js"></script>
 </body>
 </html>

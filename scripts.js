@@ -642,10 +642,13 @@ class StavMasterWebsite {
         const card = document.createElement('article');
         card.className = 'work-card animate-in';
         card.dataset.projectId = projectId;
-        const coverImage = (project.images && project.images[0]) || project.thumbnail;
+        card.setAttribute('data-project', projectId);
+        const managedCover = window.UKSTAV_WORK_COVERS?.[projectId]?.url;
+        const coverImage = managedCover || (project.images && project.images[0]) || project.thumbnail;
+        const coverAlt = window.UKSTAV_WORK_COVERS?.[projectId]?.alt || project.title;
         card.innerHTML = `
       <div class="work-card__image">
-        <img src="${coverImage}" alt="${project.title}" loading="lazy" width="400" height="250">
+        <img src="${coverImage}" alt="${coverAlt}" loading="lazy" width="400" height="250">
       </div>
       <div class="work-card__gallery">
         ${project.gallery.map(thumb => `
