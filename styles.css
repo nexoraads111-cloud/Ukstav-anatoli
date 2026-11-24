@@ -193,11 +193,24 @@ address { font-style: normal; }
 }
 
 .brand__mark { color: var(--color-accent); display: grid; place-items: center; }
+.brand__logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+.brand--footer .brand__logo { width: 28px; height: 28px; }
 .brand__divider {
     width: 1px;
     height: 1.4rem;
     background: var(--color-accent);
     opacity: 0.85;
+}
+.brand__text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+    line-height: 1.15;
 }
 .brand__name {
     font-family: var(--font-display);
@@ -205,6 +218,15 @@ address { font-style: normal; }
     letter-spacing: 0.12em;
     font-size: 1.05rem;
 }
+.brand__legal {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+.brand--footer .brand__legal { font-size: 0.58rem; }
 
 .nav__list {
     display: none;
@@ -368,6 +390,17 @@ body:has(.header--simple) main {
     z-index: 1;
     width: min(100% - 2rem, var(--container));
     padding-bottom: 1rem;
+}
+
+.hero__brand {
+    margin: 0 0 0.85rem;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(0.95rem, 2.2vw, 1.2rem);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    animation: riseIn 0.75s var(--ease) both;
 }
 
 .hero__title {

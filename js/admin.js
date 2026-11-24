@@ -15,28 +15,33 @@
   const uploadForm = $('#upload-form')
   const slotSelect = $('#photo-slot')
   const slotWrap = $('#slot-wrap')
+  const worksProjectWrap = $('#works-project-wrap')
+  const worksProjectSelect = $('#works-project')
   const leadsList = $('#leads-list')
   const leadsEmpty = $('#leads-empty')
   const leadsCount = $('#leads-count')
   const filterStatus = $('#filter-status')
 
-  let activeCategory = 'hero'
+  let activeCategory = 'brand'
+  let activeProjectId = 'project1'
   let cachedPhotos = []
+  let dbRows = []
 
   const demoMode = new URLSearchParams(window.location.search).get('demo') === '1'
   const media = window.UkstavMedia || {}
   const leadsApi = window.UkstavLeads || {}
 
+  const FIXED_SLOTS = media.FIXED_SLOTS || {}
+
   const LOCAL_SEED = {
+    brand: [
+      { id: 'demo-fav', category: 'brand', slot: 'favicon', url: 'images/ukstav_logo_2.png', alt: 'Favicon', isLocalSeed: true },
+      { id: 'demo-nav', category: 'brand', slot: 'logo-nav', url: 'images/ukstav_logo_2.png', alt: 'Logo nav', isLocalSeed: true },
+      { id: 'demo-foot', category: 'brand', slot: 'logo-footer', url: 'images/ukstav_logo_2.png', alt: 'Logo footer', isLocalSeed: true },
+    ],
     hero: [
-      {
-        id: 'demo-hero',
-        category: 'hero',
-        slot: 'hero',
-        url: 'images/hero-house.jpg',
-        alt: 'Hero — dom UKSTAV',
-        isLocalSeed: true,
-      },
+      { id: 'demo-hero', category: 'hero', slot: 'hero', url: 'images/hero-house.jpg', alt: 'Hero', isLocalSeed: true },
+      { id: 'demo-hero-alt', category: 'hero', slot: 'hero-alt', url: 'images/hero-bg.jpg', alt: 'Hero alt', isLocalSeed: true },
     ],
     services: [
       { id: 'demo-sh', category: 'services', slot: 'service-house', url: 'images/service-house.jpg', alt: 'Domy na kľúč', isLocalSeed: true },
@@ -53,25 +58,6 @@
       { id: 'demo-g1', category: 'gallery', slot: null, url: 'images/project1-1.jpg', alt: 'Galéria 1', isLocalSeed: true },
       { id: 'demo-g2', category: 'gallery', slot: null, url: 'images/project2-8.jpg', alt: 'Galéria 2', isLocalSeed: true },
       { id: 'demo-g3', category: 'gallery', slot: null, url: 'images/project3-1.jpg', alt: 'Galéria 3', isLocalSeed: true },
-    ],
-    works: [
-      { id: 'demo-w1', category: 'works', slot: 'project1', url: 'images/project1-1.jpg', alt: 'Realizácia 1', isLocalSeed: true },
-      { id: 'demo-w2', category: 'works', slot: 'project2', url: 'images/project2-1.jpg', alt: 'Realizácia 2', isLocalSeed: true },
-    ],
-  }
-
-  const FIXED_SLOTS = media.FIXED_SLOTS || {
-    hero: [{ slot: 'hero', label: 'Hlavný banner (hero)' }],
-    services: [
-      { slot: 'service-house', label: 'Karta — Domy na kľúč' },
-      { slot: 'service-reconstruction', label: 'Karta — Rekonštrukcie' },
-      { slot: 'service-facade', label: 'Karta — Fasády a interiéry' },
-      { slot: 'service-featured', label: 'Veľká fotka vpravo' },
-    ],
-    team: [
-      { slot: 'team-1', label: 'Člen tímu 1' },
-      { slot: 'team-2', label: 'Člen tímu 2' },
-      { slot: 'team-3', label: 'Člen tímu 3' },
     ],
   }
 
@@ -109,34 +95,45 @@
   cfgMissing?.classList.add('hidden')
   const db = media.db
 
-  function projectSlotOptions(selected) {
-    const projects = typeof PROJECTS !== 'undefined' ? PROJECTS : {}
-    return Object.keys(projects)
+  function fillWorksProjectSelect() {
+    if (!worksProjectSelect) return
+    const ids = media.listProjectIds ? media.listProjectIds() : Object.keys(window.PROJECTS || {})
+    worksProjectSelect.innerHTML = ids
       .map((id) => {
-        const title = projects[id]?.title || id
-        const sel = id === selected ? ' selected' : ''
-        return `<option value="${escapeAttr(id)}"${sel}>${escapeHtml(title)} (${escapeHtml(id)})</option>`
+        const title = (window.PROJECTS && PROJECTS[id]?.title) || id
+        return `<option value="${escapeAttr(id)}">${escapeHtml(title)}</option>`
       })
       .join('')
+    if (!ids.includes(activeProjectId) && ids[0]) activeProjectId = ids[0]
+    worksProjectSelect.value = activeProjectId
   }
 
   function refreshSlotSelect() {
+    const isWorks = activeCategory === 'works'
+    worksProjectWrap?.classList.toggle('hidden', !isWorks)
+    if (isWorks) fillWorksProjectSelect()
+
     if (!slotSelect) return
     const fixed = FIXED_SLOTS[activeCategory]
     if (fixed) {
       slotWrap?.classList.remove('hidden')
+      uploadForm?.classList.remove('hidden')
       slotSelect.innerHTML = fixed
         .map((s) => `<option value="${escapeAttr(s.slot)}">${escapeHtml(s.label)}</option>`)
         .join('')
       slotSelect.required = true
-    } else if (activeCategory === 'works') {
-      slotWrap?.classList.remove('hidden')
-      slotSelect.innerHTML = `<option value="">— len do CMS (bez projektu) —</option>` + projectSlotOptions()
-      slotSelect.required = false
-    } else {
+    } else if (activeCategory === 'gallery') {
       slotWrap?.classList.add('hidden')
+      uploadForm?.classList.remove('hidden')
       slotSelect.innerHTML = ''
       slotSelect.required = false
+    } else if (isWorks) {
+      // Upload happens per-card replace; hide top form free-add (use inventory)
+      slotWrap?.classList.add('hidden')
+      uploadForm?.classList.add('hidden')
+    } else {
+      slotWrap?.classList.add('hidden')
+      uploadForm?.classList.remove('hidden')
     }
   }
 
@@ -144,9 +141,7 @@
     if (!row.slot) return 'voľná fotka'
     const fixed = (FIXED_SLOTS[row.category] || []).find((s) => s.slot === row.slot)
     if (fixed) return fixed.label
-    if (typeof PROJECTS !== 'undefined' && PROJECTS[row.slot]) {
-      return `Náhľad: ${PROJECTS[row.slot].title}`
-    }
+    if (row._inventoryLabel) return row._inventoryLabel
     return row.slot
   }
 
@@ -163,37 +158,37 @@
     rows.forEach((row, index) => {
       const card = document.createElement('article')
       card.className = 'photo-card'
-      card.dataset.id = row.id
-      const badge = row.isLocalSeed ? ' · lokálna' : ''
+      card.dataset.id = row.id || row.slot || `row-${index}`
+      if (row.slot) card.dataset.slot = row.slot
+      const badge = row.isLocalSeed || row._virtual ? ' · lokálna / web' : ''
+      const canReorder = activeCategory === 'gallery' && !row._virtual
       card.innerHTML = `
         <div class="photo-card__media">
-          <img src="${escapeAttr(row.url)}" alt="${escapeAttr(row.alt)}" loading="lazy" />
+          <img src="${escapeAttr(row.url)}" alt="${escapeAttr(row.alt || '')}" loading="lazy" />
         </div>
         <div class="photo-card__body">
           <p class="photo-card__slot">${escapeHtml(slotLabel(row))}${badge}</p>
           <label class="lead-edit">
             Popis
-            <input type="text" class="photo-alt" value="${escapeAttr(row.alt)}" maxlength="160" />
+            <input type="text" class="photo-alt" value="${escapeAttr(row.alt || '')}" maxlength="160" ${demoMode ? 'readonly' : ''} />
           </label>
-          ${
-            activeCategory === 'works'
-              ? `<label class="lead-edit">Projekt
-                  <select class="photo-slot-edit">
-                    <option value="">— bez projektu —</option>
-                    ${projectSlotOptions(row.slot)}
-                  </select>
-                </label>`
-              : ''
-          }
           <div class="photo-card__buttons">
-            <button type="button" class="btn btn-outline" data-move="up" ${index === 0 ? 'disabled' : ''}>↑</button>
-            <button type="button" class="btn btn-outline" data-move="down" ${index === rows.length - 1 ? 'disabled' : ''}>↓</button>
+            ${
+              canReorder
+                ? `<button type="button" class="btn btn-outline" data-move="up" ${index === 0 ? 'disabled' : ''}>↑</button>
+                   <button type="button" class="btn btn-outline" data-move="down" ${index === rows.length - 1 ? 'disabled' : ''}>↓</button>`
+                : ''
+            }
             <label class="btn btn-outline photo-replace">
               Nahradiť
               <input type="file" accept="image/jpeg,image/png,image/webp" hidden data-replace ${demoMode ? 'disabled' : ''} />
             </label>
-            <button type="button" class="btn btn-outline" data-save ${demoMode ? 'disabled' : ''}>Uložiť</button>
-            <button type="button" class="btn btn-danger" data-delete ${demoMode ? 'disabled' : ''}>Zmazať</button>
+            ${
+              row._virtual
+                ? ''
+                : `<button type="button" class="btn btn-outline" data-save ${demoMode ? 'disabled' : ''}>Uložiť</button>
+                   <button type="button" class="btn btn-danger" data-delete ${demoMode ? 'disabled' : ''}>Zmazať</button>`
+            }
           </div>
         </div>
       `
@@ -201,14 +196,49 @@
     })
   }
 
+  function mergeWorksInventory(dbCategoryRows) {
+    const slots = media.worksSlotsForProject
+      ? media.worksSlotsForProject(activeProjectId)
+      : []
+    const bySlot = {}
+    dbCategoryRows.forEach((r) => {
+      if (r.slot) bySlot[r.slot] = r
+    })
+    return slots.map((s, index) => {
+      const existing = bySlot[s.slot]
+      if (existing) {
+        return { ...existing, _inventoryLabel: s.label }
+      }
+      return {
+        id: `virtual-${s.slot}`,
+        category: 'works',
+        slot: s.slot,
+        url: s.fallback,
+        alt: s.label,
+        isLocalSeed: true,
+        _virtual: true,
+        _inventoryLabel: s.label,
+        sortOrder: index + 1,
+      }
+    })
+  }
+
   async function refreshPhotos() {
     try {
       if (demoMode) {
-        renderPhotoCards(LOCAL_SEED[activeCategory] || [])
+        if (activeCategory === 'works') {
+          renderPhotoCards(mergeWorksInventory([]))
+        } else {
+          renderPhotoCards(LOCAL_SEED[activeCategory] || [])
+        }
         return
       }
-      const rows = await media.fetchSiteImages({ category: activeCategory })
-      renderPhotoCards(rows)
+      dbRows = await media.fetchSiteImages({ category: activeCategory })
+      if (activeCategory === 'works') {
+        renderPhotoCards(mergeWorksInventory(dbRows))
+      } else {
+        renderPhotoCards(dbRows)
+      }
     } catch (err) {
       console.error(err)
       message(`Nepodarilo sa načítať fotky: ${media.formatError?.(err) || err.message}`, 'error')
@@ -243,7 +273,9 @@
   async function refreshLeads() {
     if (!leadsList || demoMode) {
       if (leadsEmpty) {
-        leadsEmpty.textContent = demoMode ? 'V ukážke (?demo=1) sa dopyty nenačítavajú.' : leadsEmpty.textContent
+        leadsEmpty.textContent = demoMode
+          ? 'V ukážke (?demo=1) sa dopyty nenačítavajú.'
+          : leadsEmpty.textContent
         leadsEmpty.classList.remove('hidden')
       }
       return
@@ -291,7 +323,6 @@
         leadsList.appendChild(card)
       }
     } catch (err) {
-      console.error(err)
       message(`Dopyty: ${leadsApi.formatError?.(err) || err.message}`, 'error')
     }
   }
@@ -302,7 +333,7 @@
       appView?.classList.remove('hidden')
       if (userLine) {
         userLine.innerHTML =
-          'Ukážka rozhrania (<code>?demo=1</code>) — bez zápisu do Supabase. Pre ostrú správu doplňte konfiguráciu.'
+          'Ukážka rozhrania (<code>?demo=1</code>) — bez zápisu. Ostrá správa = nový Supabase podľa <code>SUPABASE.md</code>.'
       }
       $('#logout')?.classList.add('hidden')
       refreshSlotSelect()
@@ -339,6 +370,11 @@
     })
     clearMessage()
     refreshSlotSelect()
+    await refreshPhotos()
+  })
+
+  worksProjectSelect?.addEventListener('change', async () => {
+    activeProjectId = worksProjectSelect.value
     await refreshPhotos()
   })
 
@@ -391,7 +427,7 @@
   uploadForm?.addEventListener('submit', async (e) => {
     e.preventDefault()
     if (demoMode) {
-      message('V ukážke (?demo=1) sa súbory neukladajú. Nastavte Supabase podľa SUPABASE.md.', 'info')
+      message('V ukážke sa súbory neukladajú. Nastavte nový Supabase podľa SUPABASE.md.', 'info')
       return
     }
     clearMessage()
@@ -413,10 +449,12 @@
     btn.disabled = true
     try {
       if (slot && FIXED_SLOTS[activeCategory]) {
-        const existing = cachedPhotos.find((p) => p.slot === slot)
-        if (existing) {
+        const existing = cachedPhotos.find((p) => p.slot === slot && !p._virtual)
+        if (existing && existing.id && !String(existing.id).startsWith('virtual-')) {
           message('Nahrádzam fotografiu…', 'info')
-          await media.replaceSiteImage(existing, check.files[0], user.id, { altText: alt || existing.alt })
+          await media.replaceSiteImage(existing, check.files[0], user.id, {
+            altText: alt || existing.alt,
+          })
           message('Fotografia nahradená.', 'ok')
         } else {
           message('Nahrávam…', 'info')
@@ -437,7 +475,7 @@
           await media.addSiteImage({
             file,
             category: activeCategory,
-            slot: slot || null,
+            slot: null,
             altText: alt,
             sortOrder: cachedPhotos.length + done + 1,
             userId: user.id,
@@ -457,14 +495,29 @@
     }
   })
 
+  async function upsertReplace(row, file, user, alt) {
+    if (row._virtual || String(row.id).startsWith('virtual-')) {
+      await media.addSiteImage({
+        file,
+        category: activeCategory,
+        slot: row.slot,
+        altText: alt || row.alt,
+        sortOrder: row.sortOrder || 0,
+        userId: user.id,
+      })
+    } else {
+      await media.replaceSiteImage(row, file, user.id, { altText: alt || row.alt })
+    }
+  }
+
   photosList?.addEventListener('click', async (e) => {
     const card = e.target.closest('.photo-card')
     if (!card) return
     const id = card.dataset.id
-    const row = cachedPhotos.find((p) => p.id === id)
+    const row = cachedPhotos.find((p) => p.id === id || p.slot === card.dataset.slot)
     if (!row) return
 
-    if (demoMode && (e.target.closest('[data-save], [data-delete], [data-move]'))) {
+    if (demoMode && e.target.closest('[data-save], [data-delete], [data-move]')) {
       message('V ukážke sa zmeny neukladajú.', 'info')
       return
     }
@@ -472,7 +525,7 @@
     const move = e.target.closest('[data-move]')
     if (move) {
       const dir = move.getAttribute('data-move')
-      const ids = cachedPhotos.map((p) => p.id)
+      const ids = cachedPhotos.filter((p) => !p._virtual).map((p) => p.id)
       const idx = ids.indexOf(id)
       const swapWith = dir === 'up' ? idx - 1 : idx + 1
       if (swapWith < 0 || swapWith >= ids.length) return
@@ -489,12 +542,8 @@
 
     if (e.target.closest('[data-save]')) {
       const alt = card.querySelector('.photo-alt')?.value || ''
-      const slotEdit = card.querySelector('.photo-slot-edit')
       try {
-        await media.updateSiteImageMeta(id, {
-          altText: alt,
-          slot: slotEdit ? slotEdit.value : undefined,
-        })
+        await media.updateSiteImageMeta(id, { altText: alt })
         message('Uložené.', 'ok')
         await refreshPhotos()
       } catch (err) {
@@ -504,7 +553,8 @@
     }
 
     if (e.target.closest('[data-delete]')) {
-      if (!confirm('Naozaj zmazať túto fotografiu z webu?')) return
+      if (!confirm('Naozaj zmazať túto fotografiu? (web spadne späť na lokálny súbor, ak existuje)'))
+        return
       try {
         await media.deleteSiteImage(row)
         message('Fotografia zmazaná.', 'ok')
@@ -517,10 +567,13 @@
 
   photosList?.addEventListener('change', async (e) => {
     const input = e.target.closest('input[data-replace]')
-    if (!input || !input.files?.length || demoMode) return
+    if (!input || !input.files?.length || demoMode) {
+      if (demoMode && input?.files?.length) message('V ukážke sa súbory neukladajú.', 'info')
+      return
+    }
     const card = input.closest('.photo-card')
     const id = card?.dataset.id
-    const row = cachedPhotos.find((p) => p.id === id)
+    const row = cachedPhotos.find((p) => p.id === id || p.slot === card?.dataset.slot)
     const { data } = await db.auth.getSession()
     const user = data.session?.user
     if (!user || !row) return
@@ -533,7 +586,7 @@
     try {
       message('Nahrádzam…', 'info')
       const alt = card.querySelector('.photo-alt')?.value
-      await media.replaceSiteImage(row, check.files[0], user.id, { altText: alt })
+      await upsertReplace(row, check.files[0], user, alt)
       message('Fotografia nahradená.', 'ok')
       await refreshPhotos()
     } catch (err) {

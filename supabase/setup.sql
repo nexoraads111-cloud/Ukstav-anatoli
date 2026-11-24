@@ -82,7 +82,7 @@ create policy "leads_delete_authenticated"
 create table if not exists public.site_images (
   id uuid primary key default gen_random_uuid(),
   category text not null
-    check (category in ('hero', 'services', 'gallery', 'team', 'works')),
+    check (category in ('brand', 'hero', 'services', 'gallery', 'team', 'works')),
   slot text,
   storage_path text not null,
   alt_text text,
@@ -90,6 +90,20 @@ create table if not exists public.site_images (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Allow brand category on existing DBs created before this revision
+do $$
+begin
+  alter table public.site_images drop constraint if exists site_images_category_check;
+exception when undefined_object then null;
+end $$;
+
+alter table public.site_images
+  drop constraint if exists site_images_category_check;
+
+alter table public.site_images
+  add constraint site_images_category_check
+  check (category in ('brand', 'hero', 'services', 'gallery', 'team', 'works'));
 
 alter table public.site_images
   add column if not exists category text;
@@ -202,9 +216,16 @@ create policy "Auth delete site-images"
 -- ---------------------------------------------------------------------------
 -- Seed current static site photos (site-relative paths) so admin sees them
 -- ---------------------------------------------------------------------------
+-- Fixed homepage / brand slots (local paths until replaced in admin).
+-- Project detail photos (174+) are managed in admin under Realizácie by project —
+-- each path in projects.js is a replaceable slot without needing a full SQL seed.
 insert into public.site_images (id, category, slot, storage_path, alt_text, sort_order)
 values
-  ('b1000000-0000-4000-8000-000000000001', 'hero', 'hero', 'images/hero-house.jpg', 'Hero — dom UKSTAV', 1),
+  ('b1000000-0000-4000-8000-000000000001', 'brand', 'favicon', 'images/ukstav_logo_2.png', 'Favicon UKSTAV', 1),
+  ('b1000000-0000-4000-8000-000000000002', 'brand', 'logo-nav', 'images/ukstav_logo_2.png', 'Logo navigácia', 2),
+  ('b1000000-0000-4000-8000-000000000003', 'brand', 'logo-footer', 'images/ukstav_logo_2.png', 'Logo pätička', 3),
+  ('b1000000-0000-4000-8000-000000000004', 'hero', 'hero', 'images/hero-house.jpg', 'Hero — dom UKSTAV', 1),
+  ('b1000000-0000-4000-8000-000000000005', 'hero', 'hero-alt', 'images/hero-bg.jpg', 'Hero — alternatívne pozadie', 2),
   ('b1000000-0000-4000-8000-000000000010', 'services', 'service-house', 'images/service-house.jpg', 'Služba — domy na kľúč', 1),
   ('b1000000-0000-4000-8000-000000000011', 'services', 'service-reconstruction', 'images/service-reconstruction.jpg', 'Služba — rekonštrukcie', 2),
   ('b1000000-0000-4000-8000-000000000012', 'services', 'service-facade', 'images/service-facade.jpg', 'Služba — fasády a interiéry', 3),
@@ -220,17 +241,7 @@ values
   ('b1000000-0000-4000-8000-000000000035', 'gallery', null, 'images/project4-1.jpeg', 'Chodníky okolo domu', 6),
   ('b1000000-0000-4000-8000-000000000036', 'gallery', null, 'images/project7-1.jpeg', 'Rekonštrukcia kuchyne', 7),
   ('b1000000-0000-4000-8000-000000000037', 'gallery', null, 'images/project10-1.jpeg', 'Rekonštrukcia masážneho salónu', 8),
-  ('b1000000-0000-4000-8000-000000000038', 'gallery', null, 'images/project8-1.jpeg', 'Minimalistická kúpeľňa', 9),
-  ('b1000000-0000-4000-8000-000000000040', 'works', 'project1', 'images/project1-1.jpg', 'Realizácia 1 — náhľad', 1),
-  ('b1000000-0000-4000-8000-000000000041', 'works', 'project2', 'images/project2-1.jpg', 'Realizácia 2 — náhľad', 2),
-  ('b1000000-0000-4000-8000-000000000042', 'works', 'project3', 'images/project3-1.jpg', 'Realizácia 3 — náhľad', 3),
-  ('b1000000-0000-4000-8000-000000000043', 'works', 'project4', 'images/project4-1.jpeg', 'Realizácia 4 — náhľad', 4),
-  ('b1000000-0000-4000-8000-000000000044', 'works', 'project5', 'images/project5-1.jpeg', 'Realizácia 5 — náhľad', 5),
-  ('b1000000-0000-4000-8000-000000000045', 'works', 'project6', 'images/project6-1.jpeg', 'Realizácia 6 — náhľad', 6),
-  ('b1000000-0000-4000-8000-000000000046', 'works', 'project7', 'images/project7-1.jpeg', 'Realizácia 7 — náhľad', 7),
-  ('b1000000-0000-4000-8000-000000000047', 'works', 'project8', 'images/project8-1.jpeg', 'Realizácia 8 — náhľad', 8),
-  ('b1000000-0000-4000-8000-000000000048', 'works', 'project9', 'images/project9-1.jpeg', 'Realizácia 9 — náhľad', 9),
-  ('b1000000-0000-4000-8000-000000000049', 'works', 'project10', 'images/project10-1.jpeg', 'Realizácia 10 — náhľad', 10)
+  ('b1000000-0000-4000-8000-000000000038', 'gallery', null, 'images/project8-1.jpeg', 'Minimalistická kúpeľňa', 9)
 on conflict (id) do update set
   category = excluded.category,
   slot = excluded.slot,

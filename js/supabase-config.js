@@ -1,8 +1,8 @@
 /**
- * Browser Supabase config (anon / publishable key only — NOT service_role).
- * Replace placeholders after creating a free Supabase project (see SUPABASE.md).
- * Until configured, the contact form shows a clear error and admin shows setup help.
- * Preview photo UI without Supabase: open admin.html?demo=1
+ * NEW Supabase project only — paste URL + anon key from a fresh project.
+ * See SUPABASE.md (from-scratch steps). Leave empty until configured.
+ * Never put service_role or Telegram/WhatsApp tokens here.
+ * Preview admin UI without backend: admin.html?demo=1
  */
 window.UKSTAV_SUPABASE = {
   url: '',

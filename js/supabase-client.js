@@ -29,15 +29,24 @@
   }
 
   const CATEGORIES = {
+    brand: 'Logo / značka',
     hero: 'Hero',
     services: 'Služby',
     gallery: 'Galéria',
     team: 'Tím',
-    works: 'Realizácie',
+    works: 'Realizácie (všetky fotky)',
   }
 
   const FIXED_SLOTS = {
-    hero: [{ slot: 'hero', label: 'Hlavný banner (hero)' }],
+    brand: [
+      { slot: 'favicon', label: 'Favicon (ikona v prehliadači)' },
+      { slot: 'logo-nav', label: 'Logo v navigácii' },
+      { slot: 'logo-footer', label: 'Logo v pätičke' },
+    ],
+    hero: [
+      { slot: 'hero', label: 'Hlavný banner (hero)' },
+      { slot: 'hero-alt', label: 'Alternatívny hero / pozadie' },
+    ],
     services: [
       { slot: 'service-house', label: 'Karta — Domy na kľúč' },
       { slot: 'service-reconstruction', label: 'Karta — Rekonštrukcie' },
@@ -49,6 +58,49 @@
       { slot: 'team-2', label: 'Člen tímu 2' },
       { slot: 'team-3', label: 'Člen tímu 3' },
     ],
+  }
+
+  function projectsMap() {
+    return global.PROJECTS || {}
+  }
+
+  /** Build replaceable slots for one project (cover + every gallery/detail photo). */
+  function worksSlotsForProject(projectId) {
+    const p = projectsMap()[projectId]
+    if (!p) return []
+    const slots = []
+    if (p.thumbnail) {
+      slots.push({
+        slot: `${projectId}/thumbnail`,
+        label: 'Náhľad na homepage (thumbnail)',
+        fallback: p.thumbnail,
+        kind: 'thumbnail',
+        index: 0,
+      })
+    }
+    ;(p.images || []).forEach((path, index) => {
+      slots.push({
+        slot: `${projectId}/images/${index}`,
+        label: `Detailná galéria — foto ${index + 1}`,
+        fallback: path,
+        kind: 'images',
+        index,
+      })
+    })
+    ;(p.gallery || []).forEach((path, index) => {
+      slots.push({
+        slot: `${projectId}/gallery/${index}`,
+        label: `Miniatury na karte — ${index + 1}`,
+        fallback: path,
+        kind: 'gallery',
+        index,
+      })
+    })
+    return slots
+  }
+
+  function listProjectIds() {
+    return Object.keys(projectsMap())
   }
 
   const STATUS_LABELS = {
@@ -347,6 +399,8 @@
     ALLOWED_TYPES,
     CATEGORIES,
     FIXED_SLOTS,
+    worksSlotsForProject,
+    listProjectIds,
     formatError,
     publicUrl,
     isStorageObjectPath,

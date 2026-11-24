@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./css/admin.css?v=2" />
+    <link rel="stylesheet" href="./css/admin.css?v=3" />
   </head>
   <body>
     <div class="admin-shell">
@@ -36,17 +36,19 @@
       <main class="panel">
         <h1>Fotografie na webe</h1>
         <p class="lead">
-          Nahrajte, nahraďte, zoraďte alebo zmažte fotky hero, služieb, galérie, tímu a realizácií.
-          Zmeny sa prejavia na živej stránke (Supabase Storage). Postup: <code>SUPABASE.md</code>.
+          Správa <strong>všetkých</strong> fotiek na webe: logo, hero, služby, galéria, tím
+          a každá fotka v detailoch realizácií. Čistý štart: <code>SUPABASE.md</code>
+          (nový projekt + nové kľúče len v <code>js/supabase-config.js</code>).
         </p>
 
         <div id="admin-msg" class="msg" role="status" aria-live="polite"></div>
 
         <div id="config-missing" class="hidden">
           <p class="lead">
-            Chýba konfigurácia Supabase. Doplňte <code>js/supabase-config.js</code>
-            (URL + anon kľúč), v SQL Editori spustite <code>supabase/setup.sql</code>
-            a vytvorte admin účet (Authentication → Users).
+            Chýba konfigurácia. Vytvorte <strong>nový</strong> Supabase projekt od nuly
+            (návod <code>SUPABASE.md</code>), vložte URL + anon kľúč len do
+            <code>js/supabase-config.js</code>, spustite <code>supabase/setup.sql</code>
+            a pridajte admin užívateľa. Ukážka UI: <a href="admin.html?demo=1">admin.html?demo=1</a>.
           </p>
         </div>
 
@@ -83,11 +85,20 @@
 
           <div id="panel-photos">
             <div id="category-tabs" class="source-tabs" role="tablist" aria-label="Sekcia webu">
-              <button type="button" class="source-tabs__btn is-active" data-category="hero" role="tab" aria-selected="true">Hero</button>
+              <button type="button" class="source-tabs__btn is-active" data-category="brand" role="tab" aria-selected="true">Logo</button>
+              <button type="button" class="source-tabs__btn" data-category="hero" role="tab" aria-selected="false">Hero</button>
               <button type="button" class="source-tabs__btn" data-category="services" role="tab" aria-selected="false">Služby</button>
               <button type="button" class="source-tabs__btn" data-category="gallery" role="tab" aria-selected="false">Galéria</button>
               <button type="button" class="source-tabs__btn" data-category="team" role="tab" aria-selected="false">Tím</button>
               <button type="button" class="source-tabs__btn" data-category="works" role="tab" aria-selected="false">Realizácie</button>
+            </div>
+
+            <div id="works-project-wrap" class="hidden" style="margin-bottom: 1rem">
+              <label class="lead-edit" style="max-width: 28rem">
+                Projekt (všetky fotky v detaile)
+                <select id="works-project"></select>
+              </label>
+              <p class="hint">Každá fotka z <code>projects.js</code> sa dá nahradiť — thumbnail, detailná galéria aj miniatury.</p>
             </div>
 
             <form id="upload-form" class="form form--wide">
@@ -146,10 +157,10 @@
     </div>
 
     <script src="./projects.js"></script>
-    <script src="./js/supabase-config.js?v=2"></script>
+    <script src="./js/supabase-config.js?v=3"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="./js/supabase-client.js?v=2"></script>
-    <script src="./js/admin.js?v=2"></script>
+    <script src="./js/supabase-client.js?v=3"></script>
+    <script src="./js/admin.js?v=3"></script>
     <script>
       const logoutBtn = document.getElementById('logout')
       const appView = document.getElementById('app-view')

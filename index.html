@@ -16,15 +16,19 @@
 
 <header class="header" id="header" role="banner">
     <div class="container header__inner">
-        <a href="#hero" class="brand" aria-label="UKSTAV — úvod">
-            <span class="brand__mark" aria-hidden="true">
+        <a href="#hero" class="brand" aria-label="UKSTAV SLOVAKIA s. r. o. — úvod">
+            <img class="brand__logo" src="images/ukstav_logo_2.png" alt="UKSTAV SLOVAKIA s. r. o." width="36" height="36" data-image-slot="logo-nav">
+            <span class="brand__mark" hidden aria-hidden="true">
                 <svg viewBox="0 0 40 40" width="36" height="36" fill="none">
                     <path d="M6 30V16.5L20 6l14 10.5V30H6Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
                     <path d="M15 30V20h10v10" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
                 </svg>
             </span>
             <span class="brand__divider" aria-hidden="true"></span>
-            <span class="brand__name">UKSTAV</span>
+            <span class="brand__text">
+                <span class="brand__name">UKSTAV</span>
+                <span class="brand__legal">SLOVAKIA s.&nbsp;r.&nbsp;o.</span>
+            </span>
         </a>
 
         <nav class="nav" id="nav" role="navigation" aria-label="Hlavná navigácia">
@@ -52,6 +56,7 @@
             <div class="hero__veil"></div>
         </div>
         <div class="container hero__content">
+            <p class="hero__brand">UKSTAV SLOVAKIA s.&nbsp;r.&nbsp;o.</p>
             <h1 class="hero__title">
                 <span class="hero__line">DOMOVY,</span>
                 <span class="hero__line">KTORÉ MAJÚ</span>
@@ -425,18 +430,22 @@
     <div class="container">
         <div class="footer__content">
             <div class="footer__info">
-                <a href="#hero" class="brand brand--footer">
-                    <span class="brand__mark" aria-hidden="true">
+                <a href="#hero" class="brand brand--footer" aria-label="UKSTAV SLOVAKIA s. r. o.">
+                    <img class="brand__logo" src="images/ukstav_logo_2.png" alt="UKSTAV SLOVAKIA s. r. o." width="28" height="28" data-image-slot="logo-footer">
+                    <span class="brand__mark" hidden aria-hidden="true">
                         <svg viewBox="0 0 40 40" width="28" height="28" fill="none">
                             <path d="M6 30V16.5L20 6l14 10.5V30H6Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
                             <path d="M15 30V20h10v10" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
                         </svg>
                     </span>
-                    <span class="brand__name">UKSTAV</span>
+                    <span class="brand__text">
+                        <span class="brand__name">UKSTAV</span>
+                        <span class="brand__legal">SLOVAKIA s.&nbsp;r.&nbsp;o.</span>
+                    </span>
                 </a>
                 <p class="footer__description">
-                    Profesionálne stavebné práce a rekonštrukcie v Bratislave od roku 2008.
-                    Kvalita, spoľahlivosť, záruka.
+                    UKSTAV SLOVAKIA s.&nbsp;r.&nbsp;o. — profesionálne stavebné práce a rekonštrukcie
+                    v Bratislave od roku 2008. Kvalita, spoľahlivosť, záruka.
                 </p>
             </div>
             <div class="footer__contacts">
@@ -461,7 +470,7 @@
             </div>
         </div>
         <div class="footer__bottom">
-            <p>&copy; 2026 UKSTAV. Všetky práva vyhradené.</p>
+            <p>&copy; 2026 UKSTAV SLOVAKIA s.&nbsp;r.&nbsp;o. Všetky práva vyhradené.</p>
             <p>IČO: 57 177 945 · DIČ: 2122 599 974 · IČ DPH: SK2122599974</p>
             <p>
                 <a href="ochrana-osobnych-udajov.html" class="footer__legal-link">Ochrana osobných údajov</a>
@@ -511,12 +520,12 @@
     </div>
 </div>
 
-<script src="js/supabase-config.js?v=2"></script>
+<script src="js/supabase-config.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/supabase-client.js?v=2"></script>
+<script src="js/supabase-client.js?v=3"></script>
 <script src="projects.js"></script>
 <script src="scripts.js"></script>
-<script src="js/site-images.js?v=2"></script>
+<script src="js/site-images.js?v=3"></script>
 <script src="cookie-consent.js"></script>
 </body>
 </html>

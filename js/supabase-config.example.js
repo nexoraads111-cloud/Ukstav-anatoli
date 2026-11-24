@@ -1,9 +1,9 @@
 /**
- * Copy to `supabase-config.js` and fill in values from Supabase → Project Settings → API.
- * Use the anon / publishable key only — never the service_role secret.
- * See SUPABASE.md for the full setup (SQL + admin user).
+ * Copy values into `supabase-config.js` from a NEW Supabase project:
+ * Dashboard → Project Settings → API → Project URL + anon/publishable key.
+ * Never use service_role. Never reuse old PHP/Telegram secrets.
  */
 window.UKSTAV_SUPABASE = {
-  url: 'https://YOUR_PROJECT.supabase.co',
-  anonKey: 'YOUR_ANON_OR_PUBLISHABLE_KEY',
+  url: 'https://YOUR_NEW_PROJECT.supabase.co',
+  anonKey: 'YOUR_NEW_ANON_OR_PUBLISHABLE_KEY',
 }
