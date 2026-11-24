@@ -335,6 +335,9 @@ const PROJECTS = {
     },
 };
 
+// Expose for admin CMS / site-images (script `const` is not on window)
+window.PROJECTS = PROJECTS
+
 // Returns project keys sorted by order (ascending)
 function getOrderedProjectKeys() {
     return Object.keys(PROJECTS).sort((a, b) => PROJECTS[a].order - PROJECTS[b].order);

@@ -16,15 +16,19 @@
 
 <header class="header" id="header" role="banner">
     <div class="container header__inner">
-        <a href="#hero" class="brand" aria-label="UKSTAV — úvod">
-            <span class="brand__mark" aria-hidden="true">
+        <a href="#hero" class="brand" aria-label="UKSTAV SLOVAKIA s. r. o. — úvod">
+            <img class="brand__logo" src="images/ukstav_logo_2.png" alt="UKSTAV SLOVAKIA s. r. o." width="36" height="36" data-image-slot="logo-nav">
+            <span class="brand__mark" hidden aria-hidden="true">
                 <svg viewBox="0 0 40 40" width="36" height="36" fill="none">
                     <path d="M6 30V16.5L20 6l14 10.5V30H6Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
                     <path d="M15 30V20h10v10" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
                 </svg>
             </span>
             <span class="brand__divider" aria-hidden="true"></span>
-            <span class="brand__name">UKSTAV</span>
+            <span class="brand__text">
+                <span class="brand__name">UKSTAV</span>
+                <span class="brand__legal">SLOVAKIA s.&nbsp;r.&nbsp;o.</span>
+            </span>
         </a>
 
         <nav class="nav" id="nav" role="navigation" aria-label="Hlavná navigácia">
@@ -48,10 +52,11 @@
 <main role="main">
     <section class="hero" id="hero">
         <div class="hero__media" aria-hidden="true">
-            <img src="images/hero-house.jpg" alt="" class="hero__img">
+            <img src="images/hero-house.jpg" alt="" class="hero__img" data-image-slot="hero">
             <div class="hero__veil"></div>
         </div>
         <div class="container hero__content">
+            <p class="hero__brand">UKSTAV SLOVAKIA s.&nbsp;r.&nbsp;o.</p>
             <h1 class="hero__title">
                 <span class="hero__line">DOMOVY,</span>
                 <span class="hero__line">KTORÉ MAJÚ</span>
@@ -94,21 +99,21 @@
                 <div class="services__main">
                     <h2 class="section-title">Naše služby</h2>
                     <div class="services__grid">
-                        <button type="button" class="service-card" data-filter="house" style="--card-image:url('images/service-house.jpg')">
+                        <button type="button" class="service-card" data-filter="house" data-image-slot="service-house" style="--card-image:url('images/service-house.jpg')">
                             <span class="service-card__shade"></span>
                             <span class="service-card__icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 11.5L12 5l8 6.5V20H4v-8.5z"/><path d="M10 20v-6h4v6"/></svg>
                             </span>
                             <span class="service-card__title">Domy na kľúč</span>
                         </button>
-                        <button type="button" class="service-card" data-filter="reconstruction" style="--card-image:url('images/service-reconstruction.jpg')">
+                        <button type="button" class="service-card" data-filter="reconstruction" data-image-slot="service-reconstruction" style="--card-image:url('images/service-reconstruction.jpg')">
                             <span class="service-card__shade"></span>
                             <span class="service-card__icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14.5 4.5l5 5-9.5 9.5H5v-5L14.5 4.5z"/><path d="M12.5 6.5l5 5"/></svg>
                             </span>
                             <span class="service-card__title">Rekonštrukcie</span>
                         </button>
-                        <button type="button" class="service-card" data-filter="facade" style="--card-image:url('images/service-facade.jpg')">
+                        <button type="button" class="service-card" data-filter="facade" data-image-slot="service-facade" style="--card-image:url('images/service-facade.jpg')">
                             <span class="service-card__shade"></span>
                             <span class="service-card__icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="7" height="7"/><rect x="14" y="4" width="7" height="7"/><rect x="3" y="13" width="7" height="7"/><rect x="14" y="13" width="7" height="7"/></svg>
@@ -119,7 +124,7 @@
                 </div>
                 <aside class="services__feature">
                     <div class="services__feature-media">
-                        <img src="images/service-featured.jpg" alt="Realizácia rodinného domu UKSTAV" loading="lazy">
+                        <img src="images/service-featured.jpg" alt="Realizácia rodinného domu UKSTAV" loading="lazy" data-image-slot="service-featured">
                     </div>
                     <p class="services__feature-label"><span>REALIZÁCIA 2025</span> / RODINNÝ DOM</p>
                 </aside>
@@ -171,7 +176,7 @@
             <div class="team__grid">
                 <article class="team-card">
                     <div class="team-card__avatar">
-                        <img src="images/team-member-1.jpg" alt="Anatolij Porokhnavets" loading="lazy" width="300" height="300">
+                        <img src="images/team-member-1.jpg" alt="Anatolij Porokhnavets" loading="lazy" width="300" height="300" data-image-slot="team-1">
                     </div>
                     <h3 class="team-card__name">Anatolij Porokhnavets</h3>
                     <p class="team-card__role">Zakladateľ a vedúci projektov, konateľ</p>
@@ -179,7 +184,7 @@
                 </article>
                 <article class="team-card">
                     <div class="team-card__avatar">
-                        <img src="images/team-member-2.jpg" alt="Mihajlo Kovač" loading="lazy" width="300" height="300">
+                        <img src="images/team-member-2.jpg" alt="Mihajlo Kovač" loading="lazy" width="300" height="300" data-image-slot="team-2">
                     </div>
                     <h3 class="team-card__name">Mihajlo Kovač</h3>
                     <p class="team-card__role">Spoluzakladateľ a hlavný inžinier, konateľ</p>
@@ -187,7 +192,7 @@
                 </article>
                 <article class="team-card">
                     <div class="team-card__avatar">
-                        <img src="images/team-member-3.jpg" alt="Oleksandr Zmenytko" loading="lazy" width="300" height="300">
+                        <img src="images/team-member-3.jpg" alt="Oleksandr Zmenytko" loading="lazy" width="300" height="300" data-image-slot="team-3">
                     </div>
                     <h3 class="team-card__name">Oleksandr Zmenytko</h3>
                     <p class="team-card__role">Obkladač</p>
@@ -425,18 +430,22 @@
     <div class="container">
         <div class="footer__content">
             <div class="footer__info">
-                <a href="#hero" class="brand brand--footer">
-                    <span class="brand__mark" aria-hidden="true">
+                <a href="#hero" class="brand brand--footer" aria-label="UKSTAV SLOVAKIA s. r. o.">
+                    <img class="brand__logo" src="images/ukstav_logo_2.png" alt="UKSTAV SLOVAKIA s. r. o." width="28" height="28" data-image-slot="logo-footer">
+                    <span class="brand__mark" hidden aria-hidden="true">
                         <svg viewBox="0 0 40 40" width="28" height="28" fill="none">
                             <path d="M6 30V16.5L20 6l14 10.5V30H6Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
                             <path d="M15 30V20h10v10" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
                         </svg>
                     </span>
-                    <span class="brand__name">UKSTAV</span>
+                    <span class="brand__text">
+                        <span class="brand__name">UKSTAV</span>
+                        <span class="brand__legal">SLOVAKIA s.&nbsp;r.&nbsp;o.</span>
+                    </span>
                 </a>
                 <p class="footer__description">
-                    Profesionálne stavebné práce a rekonštrukcie v Bratislave od roku 2008.
-                    Kvalita, spoľahlivosť, záruka.
+                    UKSTAV SLOVAKIA s.&nbsp;r.&nbsp;o. — profesionálne stavebné práce a rekonštrukcie
+                    v Bratislave od roku 2008. Kvalita, spoľahlivosť, záruka.
                 </p>
             </div>
             <div class="footer__contacts">
@@ -461,9 +470,13 @@
             </div>
         </div>
         <div class="footer__bottom">
-            <p>&copy; 2026 UKSTAV. Všetky práva vyhradené.</p>
+            <p>&copy; 2026 UKSTAV SLOVAKIA s.&nbsp;r.&nbsp;o. Všetky práva vyhradené.</p>
             <p>IČO: 57 177 945 · DIČ: 2122 599 974 · IČ DPH: SK2122599974</p>
-            <p><a href="ochrana-osobnych-udajov.html" class="footer__legal-link">Ochrana osobných údajov</a></p>
+            <p>
+                <a href="ochrana-osobnych-udajov.html" class="footer__legal-link">Ochrana osobných údajov</a>
+                <span class="footer__sep" aria-hidden="true"> · </span>
+                <a href="admin.html" class="footer__legal-link">Admin</a>
+            </p>
         </div>
     </div>
 </footer>
@@ -507,8 +520,12 @@
     </div>
 </div>
 
+<script src="js/supabase-config.js?v=3"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase-client.js?v=3"></script>
 <script src="projects.js"></script>
 <script src="scripts.js"></script>
+<script src="js/site-images.js?v=3"></script>
 <script src="cookie-consent.js"></script>
 </body>
 </html>

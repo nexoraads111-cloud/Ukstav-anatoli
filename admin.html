@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="sk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Admin fotografií | UKSTAV</title>
+    <link rel="icon" type="image/png" href="images/ukstav_logo_2.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./css/admin.css?v=3" />
+  </head>
+  <body>
+    <div class="admin-shell">
+      <header class="admin-top">
+        <a class="admin-brand" href="./index.html" aria-label="UKSTAV — web">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <path d="M6 30V16.5L20 6l14 10.5V30H6Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M15 30V20h10v10" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+          </svg>
+          <span>
+            <strong>UKSTAV</strong>
+            <span>Správa fotografií</span>
+          </span>
+        </a>
+        <div class="admin-top-actions">
+          <a class="btn btn-outline" href="./index.html">← Späť na web</a>
+          <button type="button" class="btn btn-primary hidden" id="logout">Odhlásiť</button>
+        </div>
+      </header>
+
+      <main class="panel">
+        <h1>Fotografie na webe</h1>
+        <p class="lead">
+          Správa <strong>všetkých</strong> fotiek na webe: logo, hero, služby, galéria, tím
+          a každá fotka v detailoch realizácií. Čistý štart: <code>SUPABASE.md</code>
+          (nový projekt + nové kľúče len v <code>js/supabase-config.js</code>).
+        </p>
+
+        <div id="admin-msg" class="msg" role="status" aria-live="polite"></div>
+
+        <div id="config-missing" class="hidden">
+          <p class="lead">
+            Chýba konfigurácia. Vytvorte <strong>nový</strong> Supabase projekt od nuly
+            (návod <code>SUPABASE.md</code>), vložte URL + anon kľúč len do
+            <code>js/supabase-config.js</code>, spustite <code>supabase/setup.sql</code>
+            a pridajte admin užívateľa. Ukážka UI: <a href="admin.html?demo=1">admin.html?demo=1</a>.
+          </p>
+        </div>
+
+        <section id="login-view">
+          <form id="login-form" class="form">
+            <h2>Prihlásenie správcu</h2>
+            <p class="hint">
+              Účet v Supabase Authentication (e-mail + heslo). Verejná registrácia vypnutá —
+              účet založíte v Dashboard → Users.
+            </p>
+            <label>
+              E-mail
+              <input id="email" name="email" type="email" autocomplete="username" required />
+            </label>
+            <label>
+              Heslo
+              <input id="password" name="password" type="password" autocomplete="current-password" required />
+            </label>
+            <button type="submit" class="btn btn-primary">Prihlásiť</button>
+          </form>
+        </section>
+
+        <section id="app-view" class="hidden">
+          <p id="user-line" class="user-line"></p>
+
+          <div class="panel-tabs" role="tablist" aria-label="Admin sekcie">
+            <button type="button" class="panel-tabs__btn is-active" data-panel="photos" role="tab" aria-selected="true">
+              Fotografie
+            </button>
+            <button type="button" class="panel-tabs__btn" data-panel="leads" role="tab" aria-selected="false">
+              Dopyty
+            </button>
+          </div>
+
+          <div id="panel-photos">
+            <div id="category-tabs" class="source-tabs" role="tablist" aria-label="Sekcia webu">
+              <button type="button" class="source-tabs__btn is-active" data-category="brand" role="tab" aria-selected="true">Logo</button>
+              <button type="button" class="source-tabs__btn" data-category="hero" role="tab" aria-selected="false">Hero</button>
+              <button type="button" class="source-tabs__btn" data-category="services" role="tab" aria-selected="false">Služby</button>
+              <button type="button" class="source-tabs__btn" data-category="gallery" role="tab" aria-selected="false">Galéria</button>
+              <button type="button" class="source-tabs__btn" data-category="team" role="tab" aria-selected="false">Tím</button>
+              <button type="button" class="source-tabs__btn" data-category="works" role="tab" aria-selected="false">Realizácie</button>
+            </div>
+
+            <div id="works-project-wrap" class="hidden" style="margin-bottom: 1rem">
+              <label class="lead-edit" style="max-width: 28rem">
+                Projekt (všetky fotky v detaile)
+                <select id="works-project"></select>
+              </label>
+              <p class="hint">Každá fotka z <code>projects.js</code> sa dá nahradiť — thumbnail, detailná galéria aj miniatury.</p>
+            </div>
+
+            <form id="upload-form" class="form form--wide">
+              <h2>Pridať / nahradiť fotografiu</h2>
+              <div id="slot-wrap">
+                <label>
+                  Miesto na stránke
+                  <select id="photo-slot" name="slot"></select>
+                </label>
+              </div>
+              <label>
+                Súbor (JPEG / PNG / WebP, max 5&nbsp;MB)
+                <input id="photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple required />
+              </label>
+              <label>
+                Popis (alt)
+                <input id="photo-alt" name="alt" type="text" maxlength="160" placeholder="napr. Fasáda rodinného domu" />
+              </label>
+              <button type="submit" class="btn btn-primary">Nahrať</button>
+              <p class="hint">
+                Pri Hero / Služby / Tím nahranie do rovnakého miesta <strong>nahradí</strong> existujúcu fotku.
+                Galéria a realizácie umožňujú viac fotiek a zmenu poradia šípkami ↑↓.
+              </p>
+            </form>
+
+            <div class="list-head">
+              <h2>Fotky v sekcii <span id="photos-count" class="list-count"></span></h2>
+              <button type="button" class="btn btn-outline" id="refresh-photos">Obnoviť</button>
+            </div>
+            <p id="photos-empty" class="empty hidden">V tejto sekcii zatiaľ nie sú fotky v databáze.</p>
+            <div id="photos-list" class="photos"></div>
+          </div>
+
+          <div id="panel-leads" class="hidden">
+            <p class="hint" style="margin-bottom: 1rem">
+              Sekundárne: dopyty z kontaktného formulára (ak je Supabase napojený).
+            </p>
+            <div class="list-head">
+              <h2>Dopyty <span id="leads-count" class="list-count"></span></h2>
+              <div class="list-tools">
+                <select id="filter-status" aria-label="Filter stavu">
+                  <option value="all">Všetky</option>
+                  <option value="new">Nové</option>
+                  <option value="contacted">Kontaktované</option>
+                  <option value="done">Vybavené</option>
+                  <option value="spam">Spam</option>
+                </select>
+                <button type="button" class="btn btn-outline" id="refresh-leads">Obnoviť</button>
+              </div>
+            </div>
+            <p id="leads-empty" class="empty hidden">Zatiaľ žiadne dopyty.</p>
+            <div id="leads-list" class="leads"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./projects.js"></script>
+    <script src="./js/supabase-config.js?v=3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="./js/supabase-client.js?v=3"></script>
+    <script src="./js/admin.js?v=3"></script>
+    <script>
+      const logoutBtn = document.getElementById('logout')
+      const appView = document.getElementById('app-view')
+      const mo = new MutationObserver(() => {
+        logoutBtn.classList.toggle('hidden', appView.classList.contains('hidden'))
+      })
+      mo.observe(appView, { attributes: true, attributeFilter: ['class'] })
+    </script>
+  </body>
+</html>
