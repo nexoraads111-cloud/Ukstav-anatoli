@@ -21,6 +21,10 @@
   const leadsEmpty = $('#leads-empty')
   const leadsCount = $('#leads-count')
   const filterStatus = $('#filter-status')
+  const reviewsList = $('#reviews-list')
+  const reviewsEmpty = $('#reviews-empty')
+  const reviewsCount = $('#reviews-count')
+  const filterReviewStatus = $('#filter-review-status')
 
   let activeCategory = 'brand'
   let activeProjectId = 'project1'
@@ -30,6 +34,7 @@
   const demoMode = new URLSearchParams(window.location.search).get('demo') === '1'
   const media = window.UkstavMedia || {}
   const leadsApi = window.UkstavLeads || {}
+  const reviewsApi = window.UkstavReviews || {}
 
   const FIXED_SLOTS = media.FIXED_SLOTS || {}
 
@@ -270,6 +275,69 @@
       .join('')
   }
 
+  function reviewStars(rating) {
+    if (reviewsApi.starsHtml) return reviewsApi.starsHtml(rating)
+    const n = Math.max(0, Math.min(5, Number(rating) || 0))
+    return '★'.repeat(n) + '☆'.repeat(5 - n)
+  }
+
+  async function refreshReviews() {
+    if (!reviewsList || demoMode) {
+      if (reviewsEmpty) {
+        reviewsEmpty.textContent = demoMode
+          ? 'V ukážke (?demo=1) sa recenzie nenačítavajú.'
+          : reviewsEmpty.textContent
+        reviewsEmpty.classList.remove('hidden')
+      }
+      reviewsList?.replaceChildren()
+      if (reviewsCount) reviewsCount.textContent = ''
+      return
+    }
+    try {
+      const status = filterReviewStatus?.value || 'all'
+      const rows = await reviewsApi.fetchReviews({ status })
+      reviewsList.replaceChildren()
+      if (reviewsCount) reviewsCount.textContent = rows.length ? `${rows.length}` : ''
+      if (!rows.length) {
+        reviewsEmpty?.classList.remove('hidden')
+        return
+      }
+      reviewsEmpty?.classList.add('hidden')
+      for (const row of rows) {
+        const card = document.createElement('article')
+        card.className = 'lead-card review-admin-card'
+        const badgeClass =
+          row.status === 'accepted' ? 'lead-card__badge--done' : 'lead-card__badge--new'
+        const statusLabel = reviewsApi.STATUS_LABELS?.[row.status] || row.status
+        card.innerHTML = `
+          <header class="lead-card__head">
+            <div>
+              <h3 class="lead-card__name">${escapeHtml(row.author_name)}</h3>
+              <p class="lead-card__meta">${escapeHtml(formatWhen(row.created_at))} · <span class="review-admin-stars" aria-label="${Number(row.rating)} z 5">${reviewStars(row.rating)}</span></p>
+            </div>
+            <span class="lead-card__badge ${badgeClass}">${escapeHtml(statusLabel)}</span>
+          </header>
+          <div class="lead-card__body">
+            <p class="lead-card__desc">${escapeHtml(row.body)}</p>
+          </div>
+          <div class="lead-card__actions">
+            <div class="lead-card__buttons">
+              ${
+                row.status === 'pending'
+                  ? `<button type="button" class="btn btn-primary" data-review-accept="${escapeAttr(row.id)}">Prijať</button>`
+                  : ''
+              }
+              <button type="button" class="btn btn-danger" data-review-delete="${escapeAttr(row.id)}">Zmazať</button>
+            </div>
+          </div>
+        `
+        reviewsList.appendChild(card)
+      }
+    } catch (err) {
+      message(`Recenzie: ${reviewsApi.formatError?.(err) || err.message}`, 'error')
+    }
+  }
+
   async function refreshLeads() {
     if (!leadsList || demoMode) {
       if (leadsEmpty) {
@@ -339,6 +407,7 @@
       refreshSlotSelect()
       await refreshPhotos()
       await refreshLeads()
+      await refreshReviews()
       return
     }
 
@@ -351,11 +420,13 @@
       refreshSlotSelect()
       await refreshPhotos()
       await refreshLeads()
+      await refreshReviews()
     } else {
       appView.classList.add('hidden')
       loginView.classList.remove('hidden')
       photosList?.replaceChildren()
       leadsList?.replaceChildren()
+      reviewsList?.replaceChildren()
     }
   }
 
@@ -388,6 +459,8 @@
       })
       $('#panel-photos')?.classList.toggle('hidden', panel !== 'photos')
       $('#panel-leads')?.classList.toggle('hidden', panel !== 'leads')
+      $('#panel-reviews')?.classList.toggle('hidden', panel !== 'reviews')
+      if (panel === 'reviews') refreshReviews()
     })
   })
 
@@ -600,6 +673,44 @@
   $('#refresh-leads')?.addEventListener('click', async () => {
     await refreshLeads()
     message('Zoznam dopytov obnovený.', 'ok')
+  })
+
+  filterReviewStatus?.addEventListener('change', () => refreshReviews())
+  $('#refresh-reviews')?.addEventListener('click', async () => {
+    await refreshReviews()
+    message('Zoznam recenzií obnovený.', 'ok')
+  })
+
+  reviewsList?.addEventListener('click', async (e) => {
+    if (demoMode) {
+      if (e.target.closest('[data-review-accept], [data-review-delete]')) {
+        message('V ukážke sa zmeny neukladajú.', 'info')
+      }
+      return
+    }
+    const acceptBtn = e.target.closest('[data-review-accept]')
+    if (acceptBtn) {
+      const id = acceptBtn.getAttribute('data-review-accept')
+      try {
+        await reviewsApi.acceptReview(id)
+        message('Recenzia prijatá — zobrazí sa na webe.', 'ok')
+        await refreshReviews()
+      } catch (err) {
+        message(`Prijatie zlyhalo: ${reviewsApi.formatError?.(err) || err.message}`, 'error')
+      }
+      return
+    }
+    const delBtn = e.target.closest('[data-review-delete]')
+    if (delBtn) {
+      if (!confirm('Naozaj zmazať túto recenziu?')) return
+      try {
+        await reviewsApi.deleteReview(delBtn.getAttribute('data-review-delete'))
+        message('Recenzia zmazaná.', 'ok')
+        await refreshReviews()
+      } catch (err) {
+        message(`Mazanie zlyhalo: ${reviewsApi.formatError?.(err) || err.message}`, 'error')
+      }
+    }
   })
 
   leadsList?.addEventListener('click', async (e) => {

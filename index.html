@@ -291,65 +291,38 @@
         <div class="container">
             <div class="section-heading">
                 <h2 class="section-title">Recenzie klientov</h2>
+                <p class="section-lead">Skutočné hodnotenia od zákazníkov — zverejnené po schválení.</p>
             </div>
             <div class="reviews__container">
-                <div class="reviews__track" id="reviewsTrack">
-                    <article class="review-card">
-                        <div class="review-card__header">
-                            <div class="review-card__info">
-                                <h3 class="review-card__name">Mária Kováč</h3>
-                                <div class="review-card__rating" aria-label="5 hviezdičiek z 5">
-                                    <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
-                                </div>
-                            </div>
+                <p id="reviewsEmpty" class="reviews__empty" hidden>Zatiaľ nemáme zverejnené recenzie. Buďte prvý — napíšte svoju skúsenosť nižšie.</p>
+                <div class="reviews__track" id="reviewsTrack" aria-live="polite"></div>
+            </div>
+            <div class="reviews__form-wrap">
+                <h3 class="reviews__form-title">Napísať recenziu</h3>
+                <p class="reviews__form-lead">Vaša recenzia sa zobrazí na webe až po schválení správcom.</p>
+                <form id="reviewForm" class="review-form" novalidate>
+                    <div class="form-group">
+                        <label for="reviewName" class="form-label">Vaše meno *</label>
+                        <input type="text" id="reviewName" name="author_name" class="form-input" maxlength="80" required autocomplete="name" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" id="reviewRatingLabel">Hodnotenie *</label>
+                        <div class="rating-input" id="reviewRatingInput" role="radiogroup" aria-labelledby="reviewRatingLabel">
+                            <button type="button" class="rating-star" data-rating="1" aria-label="1 hviezdička">★</button>
+                            <button type="button" class="rating-star" data-rating="2" aria-label="2 hviezdičky">★</button>
+                            <button type="button" class="rating-star" data-rating="3" aria-label="3 hviezdičky">★</button>
+                            <button type="button" class="rating-star" data-rating="4" aria-label="4 hviezdičky">★</button>
+                            <button type="button" class="rating-star" data-rating="5" aria-label="5 hviezdičiek">★</button>
                         </div>
-                        <p class="review-card__text">„Vynikajúca práca! Chlapci kompletne zrekonštruovali náš byt včas. Kvalita na dobrej úrovni, všetko urobené starostlivo a profesionálne."</p>
-                    </article>
-                    <article class="review-card">
-                        <div class="review-card__header">
-                            <div class="review-card__info">
-                                <h3 class="review-card__name">Ján Šimko</h3>
-                                <div class="review-card__rating" aria-label="5 hviezdičiek z 5">
-                                    <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="review-card__text">„Stavali sme dom od základov. Veľmi spokojní s výsledkom! Tím profesionálny, vždy na spojení, splnili všetko včas."</p>
-                    </article>
-                    <article class="review-card">
-                        <div class="review-card__header">
-                            <div class="review-card__info">
-                                <h3 class="review-card__name">Katarína Čierna</h3>
-                                <div class="review-card__rating" aria-label="4 hviezdičky z 5">
-                                    <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star star--empty">☆</span>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="review-card__text">„Robili rekonštrukciu kancelárie. Profesionálna práca od začiatku až do konca. Celkovo spokojná s výsledkom."</p>
-                    </article>
-                    <article class="review-card">
-                        <div class="review-card__header">
-                            <div class="review-card__info">
-                                <h3 class="review-card__name">Petra Novotná</h3>
-                                <div class="review-card__rating" aria-label="5 hviezdičiek z 5">
-                                    <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="review-card__text">„Spoľahlivý tím, všetko bolo dokončené načas a s veľkým dôrazom na detaily."</p>
-                    </article>
-                    <article class="review-card">
-                        <div class="review-card__header">
-                            <div class="review-card__info">
-                                <h3 class="review-card__name">Martin Horák</h3>
-                                <div class="review-card__rating" aria-label="5 hviezdičiek z 5">
-                                    <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="review-card__text">„Spoľahlivý tím, všetko bolo dokončené načas a s veľkým dôrazom na detaily."</p>
-                    </article>
-                </div>
+                        <input type="hidden" id="reviewRatingValue" name="rating" value="0" />
+                    </div>
+                    <div class="form-group">
+                        <label for="reviewBody" class="form-label">Vaša skúsenosť *</label>
+                        <textarea id="reviewBody" name="body" class="form-input" rows="4" maxlength="1500" required placeholder="Popíšte, ako prebehla spolupráca…"></textarea>
+                    </div>
+                    <p id="reviewFormMsg" class="review-form__msg" role="status" aria-live="polite"></p>
+                    <button type="submit" class="btn btn--primary">Odoslať recenziu</button>
+                </form>
             </div>
         </div>
     </section>
@@ -520,11 +493,11 @@
     </div>
 </div>
 
-<script src="js/supabase-config.js?v=3"></script>
+<script src="js/supabase-config.js?v=4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/supabase-client.js?v=3"></script>
+<script src="js/supabase-client.js?v=4"></script>
 <script src="projects.js"></script>
-<script src="scripts.js"></script>
+<script src="scripts.js?v=4"></script>
 <script src="js/site-images.js?v=3"></script>
 <script src="cookie-consent.js"></script>
 </body>

@@ -1,5 +1,5 @@
 /**
- * Shared Supabase browser client for UKSTAV (leads + site photo CMS).
+ * Shared Supabase browser client for UKSTAV (leads + site photo CMS + reviews).
  * Requires js/supabase-config.js + @supabase/supabase-js UMD CDN.
  */
 ;(function (global) {
@@ -379,6 +379,95 @@
     if (error) throw error
   }
 
+  const REVIEW_STATUS_LABELS = {
+    pending: 'Čaká na schválenie',
+    accepted: 'Prijatá',
+  }
+
+  function normalizeReviewPayload(data) {
+    const authorName = String(data.author_name || data.name || '').trim()
+    const rating = Number(data.rating)
+    const body = String(data.body || data.text || '').trim()
+    if (authorName.length < 2) {
+      throw new Error('Meno musí mať aspoň 2 znaky.')
+    }
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      throw new Error('Vyberte hodnotenie od 1 do 5 hviezdičiek.')
+    }
+    if (body.length < 10) {
+      throw new Error('Text recenzie musí mať aspoň 10 znakov.')
+    }
+    return {
+      author_name: authorName.slice(0, 80),
+      rating,
+      body: body.slice(0, 1500),
+      status: 'pending',
+    }
+  }
+
+  /** Public: only accepted reviews (RLS). */
+  async function fetchAcceptedReviews() {
+    if (!db) throw new Error('Supabase nie je nakonfigurovaný.')
+    const { data, error } = await db
+      .from('reviews')
+      .select('id, author_name, rating, body, status, created_at')
+      .eq('status', 'accepted')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return data || []
+  }
+
+  /** Admin: all reviews, optional status filter. */
+  async function fetchReviews({ status } = {}) {
+    if (!db) throw new Error('Supabase nie je nakonfigurovaný.')
+    let query = db
+      .from('reviews')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (status && status !== 'all') query = query.eq('status', status)
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  }
+
+  async function submitReview(data) {
+    if (!db) {
+      throw new Error(
+        'Recenzie ešte nie sú napojené. Skontrolujte js/supabase-config.js a spustite SQL (SUPABASE.md).',
+      )
+    }
+    const row = normalizeReviewPayload(data)
+    const { data: inserted, error } = await db.from('reviews').insert(row).select('id').single()
+    if (error) {
+      error.message = `Uloženie recenzie: ${formatError(error)}`
+      throw error
+    }
+    return inserted
+  }
+
+  async function acceptReview(id) {
+    if (!db) throw new Error('Supabase nie je nakonfigurovaný.')
+    if (!id) throw new Error('Chýba id recenzie.')
+    const { error } = await db.from('reviews').update({ status: 'accepted' }).eq('id', id)
+    if (error) throw error
+  }
+
+  async function deleteReview(id) {
+    if (!db) throw new Error('Supabase nie je nakonfigurovaný.')
+    if (!id) throw new Error('Chýba id recenzie.')
+    const { error } = await db.from('reviews').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  function starsHtml(rating) {
+    const n = Math.max(1, Math.min(5, Number(rating) || 0))
+    let html = ''
+    for (let i = 1; i <= 5; i += 1) {
+      html += i <= n ? '<span class="star">★</span>' : '<span class="star star--empty">☆</span>'
+    }
+    return html
+  }
+
   global.UkstavLeads = {
     db,
     configured,
@@ -389,6 +478,19 @@
     fetchLeads,
     updateLead,
     deleteLead,
+  }
+
+  global.UkstavReviews = {
+    db,
+    configured,
+    STATUS_LABELS: REVIEW_STATUS_LABELS,
+    formatError,
+    starsHtml,
+    fetchAcceptedReviews,
+    fetchReviews,
+    submitReview,
+    acceptReview,
+    deleteReview,
   }
 
   global.UkstavMedia = {

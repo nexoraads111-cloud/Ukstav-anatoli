@@ -197,8 +197,8 @@ class StavMasterWebsite {
         // Setup lazy loading for images
         this.setupLazyLoading();
 
-        // Initialize reviews slider
-        this.initReviewsSlider();
+        // Load accepted reviews from Supabase + form
+        this.initReviews();
     }
 
     checkFilterBeforeLoad() {
@@ -709,21 +709,156 @@ class StavMasterWebsite {
         lazyImages.forEach(img => imageObserver.observe(img));
     }
 
-    initReviewsSlider() {
+    initReviews() {
+        this.loadAcceptedReviews();
+        this.setupReviewForm();
+    }
+
+    escapeHtml(str) {
+        return String(str || '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;');
+    }
+
+    starsMarkup(rating) {
+        const api = window.UkstavReviews;
+        if (api?.starsHtml) return api.starsHtml(rating);
+        const n = Math.max(0, Math.min(5, Number(rating) || 0));
+        let html = '';
+        for (let i = 1; i <= 5; i += 1) {
+            html += i <= n ? '<span class="star">★</span>' : '<span class="star star--empty">☆</span>';
+        }
+        return html;
+    }
+
+    renderReviewCards(rows) {
         const track = document.getElementById('reviewsTrack');
+        const empty = document.getElementById('reviewsEmpty');
         if (!track) return;
 
-        // Clone reviews for infinite scroll effect
-        const reviews = track.innerHTML;
-        track.innerHTML = reviews;
+        track.replaceChildren();
+        if (!rows.length) {
+            if (empty) empty.hidden = false;
+            return;
+        }
+        if (empty) empty.hidden = true;
 
-        // Pause animation on hover
-        track.addEventListener('mouseenter', () => {
-            track.style.animationPlayState = 'paused';
+        const frag = document.createDocumentFragment();
+        rows.forEach((row) => {
+            const article = document.createElement('article');
+            article.className = 'review-card';
+            const name = this.escapeHtml(row.author_name);
+            const body = this.escapeHtml(row.body);
+            const rating = Number(row.rating) || 0;
+            article.innerHTML = `
+                <div class="review-card__header">
+                    <div class="review-card__info">
+                        <h3 class="review-card__name">${name}</h3>
+                        <div class="review-card__rating" aria-label="${rating} hviezdičiek z 5">
+                            ${this.starsMarkup(rating)}
+                        </div>
+                    </div>
+                </div>
+                <p class="review-card__text">„${body}"</p>
+            `;
+            frag.appendChild(article);
+        });
+        track.appendChild(frag);
+    }
+
+    async loadAcceptedReviews() {
+        const track = document.getElementById('reviewsTrack');
+        if (!track) return;
+        const api = window.UkstavReviews;
+        if (!api?.configured) {
+            this.renderReviewCards([]);
+            return;
+        }
+        try {
+            const rows = await api.fetchAcceptedReviews();
+            this.renderReviewCards(rows);
+        } catch (err) {
+            console.error('Reviews load error:', err);
+            this.renderReviewCards([]);
+        }
+    }
+
+    setupReviewForm() {
+        const form = document.getElementById('reviewForm');
+        if (!form) return;
+
+        const ratingInput = document.getElementById('reviewRatingInput');
+        const ratingValue = document.getElementById('reviewRatingValue');
+        const msgEl = document.getElementById('reviewFormMsg');
+        const stars = ratingInput
+            ? Array.from(ratingInput.querySelectorAll('.rating-star'))
+            : [];
+
+        const setRating = (rating) => {
+            if (ratingValue) ratingValue.value = String(rating);
+            stars.forEach((star) => {
+                const n = Number(star.dataset.rating);
+                star.classList.toggle('active', n <= rating);
+                star.setAttribute('aria-checked', n === rating ? 'true' : 'false');
+            });
+        };
+
+        stars.forEach((star) => {
+            star.addEventListener('click', () => setRating(Number(star.dataset.rating)));
+            star.addEventListener('mouseenter', () => {
+                const hover = Number(star.dataset.rating);
+                stars.forEach((s) => {
+                    s.classList.toggle('active', Number(s.dataset.rating) <= hover);
+                });
+            });
+        });
+        ratingInput?.addEventListener('mouseleave', () => {
+            setRating(Number(ratingValue?.value || 0));
         });
 
-        track.addEventListener('mouseleave', () => {
-            track.style.animationPlayState = 'running';
+        const setMsg = (text, tone = '') => {
+            if (!msgEl) return;
+            msgEl.textContent = text || '';
+            msgEl.className = 'review-form__msg' + (tone ? ` is-${tone}` : '');
+        };
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            setMsg('');
+            const authorName = (document.getElementById('reviewName')?.value || '').trim();
+            const rating = Number(ratingValue?.value || 0);
+            const body = (document.getElementById('reviewBody')?.value || '').trim();
+            const api = window.UkstavReviews;
+            const btn = form.querySelector('button[type="submit"]');
+            const original = btn?.textContent;
+
+            if (!api?.configured) {
+                setMsg('Recenzie momentálne nie sú dostupné. Skúste neskôr.', 'error');
+                return;
+            }
+
+            try {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = 'Odosielam…';
+                }
+                await api.submitReview({ author_name: authorName, rating, body });
+                form.reset();
+                setRating(0);
+                setMsg(
+                    'Ďakujeme! Vaša recenzia bola odoslaná a zobrazí sa po schválení.',
+                    'ok',
+                );
+            } catch (err) {
+                setMsg(api.formatError?.(err) || err.message || 'Odoslanie zlyhalo.', 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = original || 'Odoslať recenziu';
+                }
+            }
         });
     }
 
