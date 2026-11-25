@@ -5,6 +5,6 @@
  * Preview admin UI without backend: admin.html?demo=1
  */
 window.UKSTAV_SUPABASE = {
-  url: '',
-  anonKey: '',
+  url: 'https://gqcogdqqgxzuteaoaxza.supabase.co',
+  anonKey: 'sb_publishable_UPyU7kax2ItTEiYZo5DslA_lsGvmGzu',
 }
