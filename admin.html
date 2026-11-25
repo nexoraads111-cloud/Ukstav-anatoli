@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex,nofollow" />
-    <title>Admin fotografií | UKSTAV</title>
+    <title>Admin | UKSTAV</title>
     <link rel="icon" type="image/png" href="images/ukstav_logo_2.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./css/admin.css?v=3" />
+    <link rel="stylesheet" href="./css/admin.css?v=4" />
   </head>
   <body>
     <div class="admin-shell">
@@ -24,7 +24,7 @@
           </svg>
           <span>
             <strong>UKSTAV</strong>
-            <span>Správa fotografií</span>
+            <span>Správa webu</span>
           </span>
         </a>
         <div class="admin-top-actions">
@@ -34,11 +34,11 @@
       </header>
 
       <main class="panel">
-        <h1>Fotografie na webe</h1>
+        <h1>Správa webu</h1>
         <p class="lead">
-          Správa <strong>všetkých</strong> fotiek na webe: logo, hero, služby, galéria, tím
-          a každá fotka v detailoch realizácií. Čistý štart: <code>SUPABASE.md</code>
-          (nový projekt + nové kľúče len v <code>js/supabase-config.js</code>).
+          Fotografie, dopyty a <strong>recenzie klientov</strong> (Prijať / Zmazať).
+          Návod: <code>SUPABASE.md</code> — kľúče len v <code>js/supabase-config.js</code>,
+          SQL pre recenzie v <code>supabase/reviews.sql</code>.
         </p>
 
         <div id="admin-msg" class="msg" role="status" aria-live="polite"></div>
@@ -80,6 +80,9 @@
             </button>
             <button type="button" class="panel-tabs__btn" data-panel="leads" role="tab" aria-selected="false">
               Dopyty
+            </button>
+            <button type="button" class="panel-tabs__btn" data-panel="reviews" role="tab" aria-selected="false">
+              Recenzie
             </button>
           </div>
 
@@ -152,15 +155,36 @@
             <p id="leads-empty" class="empty hidden">Zatiaľ žiadne dopyty.</p>
             <div id="leads-list" class="leads"></div>
           </div>
+
+          <div id="panel-reviews" class="hidden">
+            <p class="hint" style="margin-bottom: 1rem">
+              Recenzie z homepage. Na verejnom webe sa zobrazia len po <strong>Prijať</strong>.
+              Čakajúce môžete <strong>Prijať</strong> alebo <strong>Zmazať</strong>.
+              Pred prvým použitím spustite SQL z <code>supabase/reviews.sql</code> (pozri <code>SUPABASE.md</code>).
+            </p>
+            <div class="list-head">
+              <h2>Recenzie <span id="reviews-count" class="list-count"></span></h2>
+              <div class="list-tools">
+                <select id="filter-review-status" aria-label="Filter stavu recenzie">
+                  <option value="all">Všetky</option>
+                  <option value="pending" selected>Čakajúce</option>
+                  <option value="accepted">Prijaté</option>
+                </select>
+                <button type="button" class="btn btn-outline" id="refresh-reviews">Obnoviť</button>
+              </div>
+            </div>
+            <p id="reviews-empty" class="empty hidden">Zatiaľ žiadne recenzie v tomto filtri.</p>
+            <div id="reviews-list" class="leads"></div>
+          </div>
         </section>
       </main>
     </div>
 
     <script src="./projects.js"></script>
-    <script src="./js/supabase-config.js?v=3"></script>
+    <script src="./js/supabase-config.js?v=4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="./js/supabase-client.js?v=3"></script>
-    <script src="./js/admin.js?v=3"></script>
+    <script src="./js/supabase-client.js?v=4"></script>
+    <script src="./js/admin.js?v=4"></script>
     <script>
       const logoutBtn = document.getElementById('logout')
       const appView = document.getElementById('app-view')
