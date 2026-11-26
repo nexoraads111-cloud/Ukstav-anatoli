@@ -1,4 +1,10 @@
 ;(async function () {
+  // Never run inside someone else's page (clickjacking protection).
+  if (window.top !== window.self) {
+    document.documentElement.innerHTML = ''
+    return
+  }
+
   const $ = (sel, root = document) => root.querySelector(sel)
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel))
 
@@ -25,8 +31,15 @@
   const reviewsEmpty = $('#reviews-empty')
   const reviewsCount = $('#reviews-count')
   const filterReviewStatus = $('#filter-review-status')
+  const galleryFields = $('#gallery-fields')
+  const workTypeChecks = $('#work-type-checks')
+  const photoProject = $('#photo-project')
+  const uploadTitle = $('#upload-title')
+  const uploadHint = $('#upload-hint')
+  const photosInput = $('#photos')
+  const logoutBtn = $('#logout')
 
-  let activeCategory = 'brand'
+  let activeCategory = 'gallery'
   let activeProjectId = 'project1'
   let cachedPhotos = []
   let dbRows = []
@@ -90,6 +103,39 @@
     return escapeHtml(str).replaceAll("'", '&#39;')
   }
 
+  const WORK_TYPE_LIST = typeof WORK_TYPES !== 'undefined' ? WORK_TYPES : []
+
+  function typeCheckboxes(selected, namePrefix) {
+    return WORK_TYPE_LIST.map(
+      (t) => `
+        <label class="chip">
+          <input type="checkbox" data-work-type value="${escapeAttr(t.key)}" ${
+            (selected || []).includes(t.key) ? 'checked' : ''
+          } ${namePrefix === 'card' && demoMode ? 'disabled' : ''} />
+          <span>${escapeHtml(t.label)}</span>
+        </label>`,
+    ).join('')
+  }
+
+  function projectOptions(selected) {
+    const ids = Object.keys(window.PROJECTS || {})
+    return (
+      '<option value="">— bez projektu —</option>' +
+      ids
+        .map(
+          (id) =>
+            `<option value="${escapeAttr(id)}"${id === selected ? ' selected' : ''}>${escapeHtml(
+              PROJECTS[id].title,
+            )}</option>`,
+        )
+        .join('')
+    )
+  }
+
+  function checkedTypes(root) {
+    return $$('input[data-work-type]:checked', root).map((el) => el.value)
+  }
+
   if (!demoMode && !media.configured) {
     loginView?.classList.add('hidden')
     appView?.classList.add('hidden')
@@ -115,8 +161,32 @@
 
   function refreshSlotSelect() {
     const isWorks = activeCategory === 'works'
+    const isGallery = activeCategory === 'gallery'
     worksProjectWrap?.classList.toggle('hidden', !isWorks)
+    galleryFields?.classList.toggle('hidden', !isGallery)
     if (isWorks) fillWorksProjectSelect()
+    if (isGallery) {
+      if (workTypeChecks && !workTypeChecks.children.length) {
+        workTypeChecks.innerHTML = typeCheckboxes([], 'form')
+      }
+      if (photoProject && photoProject.options.length <= 1) {
+        photoProject.innerHTML = projectOptions('')
+      }
+    }
+    if (uploadTitle) {
+      uploadTitle.textContent = isGallery ? 'Pridať fotografie do realizácií' : 'Pridať / nahradiť fotografiu'
+    }
+    if (uploadHint) {
+      uploadHint.textContent = isGallery
+        ? 'Veľké fotky z telefónu sa pred nahraním automaticky zmenšia. Nové fotky sa zobrazia na začiatku galérie. Fotka bez typu sa ukáže len vo filtri „Všetko“.'
+        : 'Nahranie do rovnakého miesta nahradí existujúcu fotku.'
+    }
+    if (photosInput) {
+      // Logos keep their original format (transparency); everything else is resized in the browser.
+      photosInput.accept =
+        activeCategory === 'brand' ? 'image/jpeg,image/png,image/webp' : 'image/*'
+      photosInput.multiple = isGallery
+    }
 
     if (!slotSelect) return
     const fixed = FIXED_SLOTS[activeCategory]
@@ -127,13 +197,13 @@
         .map((s) => `<option value="${escapeAttr(s.slot)}">${escapeHtml(s.label)}</option>`)
         .join('')
       slotSelect.required = true
-    } else if (activeCategory === 'gallery') {
+    } else if (isGallery) {
       slotWrap?.classList.add('hidden')
       uploadForm?.classList.remove('hidden')
       slotSelect.innerHTML = ''
       slotSelect.required = false
     } else if (isWorks) {
-      // Upload happens per-card replace; hide top form free-add (use inventory)
+      // Replacing a project photo happens on each photo card
       slotWrap?.classList.add('hidden')
       uploadForm?.classList.add('hidden')
     } else {
@@ -167,6 +237,17 @@
       if (row.slot) card.dataset.slot = row.slot
       const badge = row.isLocalSeed || row._virtual ? ' · lokálna / web' : ''
       const canReorder = activeCategory === 'gallery' && !row._virtual
+      const galleryExtras =
+        activeCategory === 'gallery' && !row._virtual
+          ? `<fieldset class="chips chips--small">
+               <legend>Typ prác</legend>
+               <div class="chips__list" data-card-types>${typeCheckboxes(row.workTypes, 'card')}</div>
+             </fieldset>
+             <label class="lead-edit">
+               Projekt
+               <select class="photo-project" ${demoMode ? 'disabled' : ''}>${projectOptions(row.projectId || '')}</select>
+             </label>`
+          : ''
       card.innerHTML = `
         <div class="photo-card__media">
           <img src="${escapeAttr(row.url)}" alt="${escapeAttr(row.alt || '')}" loading="lazy" />
@@ -177,6 +258,7 @@
             Popis
             <input type="text" class="photo-alt" value="${escapeAttr(row.alt || '')}" maxlength="160" ${demoMode ? 'readonly' : ''} />
           </label>
+          ${galleryExtras}
           <div class="photo-card__buttons">
             ${
               canReorder
@@ -239,6 +321,8 @@
         return
       }
       dbRows = await media.fetchSiteImages({ category: activeCategory })
+      // Old seed rows pointing at images/… are the static project photos — shown in the grid anyway.
+      if (activeCategory === 'gallery') dbRows = dbRows.filter((r) => !r.isLocalSeed)
       if (activeCategory === 'works') {
         renderPhotoCards(mergeWorksInventory(dbRows))
       } else {
@@ -338,6 +422,15 @@
     }
   }
 
+  /** Digits-only international number for wa.me (07xx / 09xx → Slovak +421). */
+  function waDigits(phone) {
+    let d = String(phone || '').replace(/[^\d+]/g, '')
+    if (d.startsWith('+')) d = d.slice(1)
+    else if (d.startsWith('00')) d = d.slice(2)
+    else if (d.startsWith('0')) d = '421' + d.slice(1)
+    return /^\d{9,15}$/.test(d) ? d : ''
+  }
+
   async function refreshLeads() {
     if (!leadsList || demoMode) {
       if (leadsEmpty) {
@@ -372,7 +465,11 @@
             <span class="lead-card__badge lead-card__badge--${escapeAttr(row.status)}">${escapeHtml(leadsApi.STATUS_LABELS[row.status] || row.status)}</span>
           </header>
           <div class="lead-card__body">
-            <p><a href="tel:${escapeAttr(phoneHref)}">${escapeHtml(row.phone)}</a></p>
+            <p><a href="tel:${escapeAttr(phoneHref)}">${escapeHtml(row.phone)}</a>${
+              waDigits(row.phone)
+                ? ` · <a href="https://wa.me/${escapeAttr(waDigits(row.phone))}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`
+                : ''
+            }</p>
             ${row.description ? `<p class="lead-card__desc">${escapeHtml(row.description)}</p>` : ''}
           </div>
           <div class="lead-card__actions">
@@ -413,6 +510,14 @@
 
     const { data } = await db.auth.getSession()
     const session = data.session
+    if (session?.user && !(await media.isAdmin())) {
+      // Signed in, but not the administrator → no access (RLS blocks every action anyway).
+      await db.auth.signOut()
+      message('Tento účet nemá oprávnenie správcu.', 'error')
+      appView.classList.add('hidden')
+      loginView.classList.remove('hidden')
+      return
+    }
     if (session?.user) {
       loginView.classList.add('hidden')
       appView.classList.remove('hidden')
@@ -511,7 +616,9 @@
       return
     }
     const input = $('#photos')
-    const check = media.validateFiles(input.files, { max: activeCategory === 'gallery' ? 10 : 1 })
+    const isGallery = activeCategory === 'gallery'
+    const resize = activeCategory !== 'brand'
+    const check = media.validateFiles(input.files, { max: isGallery ? 20 : 1, resize })
     if (!check.ok) {
       message(check.error, 'error')
       return
@@ -542,20 +649,39 @@
           message('Fotografia pridaná.', 'ok')
         }
       } else {
+        const workTypes = isGallery ? checkedTypes(galleryFields) : []
+        const projectId = isGallery ? photoProject?.value || null : null
+        // New photos go to the front: smaller sort_order = earlier on the website.
+        const minOrder = Math.min(0, ...cachedPhotos.map((p) => Number(p.sortOrder) || 0))
         let done = 0
+        const failed = []
         for (const file of check.files) {
-          message(`Nahrávam ${done + 1}/${check.files.length}…`, 'info')
-          await media.addSiteImage({
-            file,
-            category: activeCategory,
-            slot: null,
-            altText: alt,
-            sortOrder: cachedPhotos.length + done + 1,
-            userId: user.id,
-          })
-          done += 1
+          message(`Nahrávam ${done + failed.length + 1}/${check.files.length}…`, 'info')
+          try {
+            await media.addSiteImage({
+              file,
+              category: activeCategory,
+              slot: null,
+              altText: alt,
+              sortOrder: minOrder - (check.files.length - done - failed.length),
+              userId: user.id,
+              workTypes,
+              projectId,
+            })
+            done += 1
+          } catch (err) {
+            console.error(err)
+            failed.push(`${file.name}: ${media.formatError(err)}`)
+          }
         }
-        message(`Hotovo — nahraných ${done} fotografií.`, 'ok')
+        if (failed.length) {
+          message(
+            `Nahraných ${done}, zlyhalo ${failed.length}. ${failed.join(' | ')}`,
+            done ? 'info' : 'error',
+          )
+        } else {
+          message(`Hotovo — nahraných ${done} fotografií.`, 'ok')
+        }
       }
       uploadForm.reset()
       refreshSlotSelect()
@@ -615,8 +741,13 @@
 
     if (e.target.closest('[data-save]')) {
       const alt = card.querySelector('.photo-alt')?.value || ''
+      const extra = {}
+      if (card.querySelector('[data-card-types]')) {
+        extra.workTypes = checkedTypes(card)
+        extra.projectId = card.querySelector('.photo-project')?.value || null
+      }
       try {
-        await media.updateSiteImageMeta(id, { altText: alt })
+        await media.updateSiteImageMeta(id, { altText: alt, ...extra })
         message('Uložené.', 'ok')
         await refreshPhotos()
       } catch (err) {
@@ -650,7 +781,7 @@
     const { data } = await db.auth.getSession()
     const user = data.session?.user
     if (!user || !row) return
-    const check = media.validateFiles(input.files, { max: 1 })
+    const check = media.validateFiles(input.files, { max: 1, resize: row.category !== 'brand' })
     if (!check.ok) {
       message(check.error, 'error')
       input.value = ''
@@ -744,9 +875,16 @@
     }
   })
 
+  if (logoutBtn && appView) {
+    new MutationObserver(() => {
+      logoutBtn.classList.toggle('hidden', appView.classList.contains('hidden') || demoMode)
+    }).observe(appView, { attributes: true, attributeFilter: ['class'] })
+  }
+
   if (!demoMode && db) {
-    db.auth.onAuthStateChange(() => {
-      syncSession()
+    db.auth.onAuthStateChange((event) => {
+      // Avoid re-running on token refreshes; only real sign-in / sign-out changes matter.
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') syncSession()
     })
   }
 

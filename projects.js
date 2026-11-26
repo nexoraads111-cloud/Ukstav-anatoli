@@ -130,7 +130,7 @@ const PROJECTS = {
         duration: "1 týždeň",
         price: "6 000 € bez materiálu",
         year: "2024",
-        keywords: ["sidewalk", "concrete", "tiles"],
+        keywords: ["sidewalk", "concrete", "tiles", "outdoor"],
         images: [
             "images/project4-1.jpeg",
             "images/project4-2.jpeg",
@@ -202,7 +202,7 @@ const PROJECTS = {
         duration: "1 týždeň",
         price: "3 500 € s materiálom",
         year: "2025",
-        keywords: ["drainage"],
+        keywords: ["drainage", "outdoor"],
         images: [
             "images/project6-1.jpeg",
             "images/project6-2.jpeg",
@@ -341,4 +341,75 @@ window.PROJECTS = PROJECTS
 // Returns project keys sorted by order (ascending)
 function getOrderedProjectKeys() {
     return Object.keys(PROJECTS).sort((a, b) => PROJECTS[a].order - PROJECTS[b].order);
+}
+
+// ===== UNIFIED PORTFOLIO (Realizácie + Galéria v jednom) =====
+// Filter categories shown as chips on the homepage. A photo belongs to a category
+// when its project has the matching keyword (above) or when the photo itself was
+// tagged with it in the admin panel.
+const WORK_TYPES = [
+    { key: "house", label: "Domy na kľúč" },
+    { key: "reconstruction", label: "Rekonštrukcie" },
+    { key: "bathroom_kitchen", label: "Kúpeľne a kuchyne" },
+    { key: "tiles", label: "Obklady a dlažby" },
+    { key: "roof", label: "Strechy" },
+    { key: "facade", label: "Fasády a zateplenie" },
+    { key: "outdoor", label: "Chodníky a exteriér" },
+];
+
+// Small (640px) preview generated into images/thumbs/ for the grid; full photo opens in the lightbox.
+function workThumb(path) {
+    if (!path || /^https?:\/\//i.test(path)) return path;
+    const m = String(path).match(/^images\/([^/]+)\.[a-z0-9]+$/i);
+    return m ? `images/thumbs/${m[1]}.jpg` : path;
+}
+
+function projectWorkTypes(project) {
+    const kw = (project && project.keywords) || [];
+    return WORK_TYPES.filter((t) => kw.includes(t.key)).map((t) => t.key);
+}
+
+/**
+ * Flat list of every portfolio photo: photos uploaded in the admin first (newest first
+ * as ordered there), then all photos of the static projects in project order.
+ * @param {Array} uploaded rows from Supabase (category "gallery", real uploads only)
+ */
+function buildPortfolioPhotos(uploaded) {
+    const photos = [];
+    const types = new Set(WORK_TYPES.map((t) => t.key));
+    (uploaded || []).forEach((row) => {
+        const project = row.projectId ? PROJECTS[row.projectId] : null;
+        let rowTypes = (row.workTypes || []).filter((k) => types.has(k));
+        if (!rowTypes.length && project) rowTypes = projectWorkTypes(project);
+        photos.push({
+            id: `db/${row.id}`,
+            src: row.url,
+            thumb: row.url,
+            alt: row.alt || (project ? project.title : "Realizácia UKSTAV"),
+            title: row.alt || (project ? project.title : "Realizácia UKSTAV"),
+            subtitle: project ? project.title : "",
+            projectId: project ? row.projectId : null,
+            types: rowTypes,
+            source: "db",
+        });
+    });
+    getOrderedProjectKeys().forEach((pid) => {
+        const project = PROJECTS[pid];
+        const projectTypes = projectWorkTypes(project);
+        (project.images || []).forEach((src, index) => {
+            if (!src) return;
+            photos.push({
+                id: `${pid}/images/${index}`,
+                src,
+                thumb: workThumb(src),
+                alt: `${project.title} — foto ${index + 1}`,
+                title: project.title,
+                subtitle: project.subtitle,
+                projectId: pid,
+                types: projectTypes,
+                source: "static",
+            });
+        });
+    });
+    return photos;
 }

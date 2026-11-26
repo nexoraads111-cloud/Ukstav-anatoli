@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=5">
     <link rel="icon" type="image/png" href="images/ukstav_logo_2.png">
 </head>
 <body>
@@ -31,55 +31,10 @@
 </header>
 
 <main role="main">
-    <section class="project-comments" id="commentFormContainer" style="display: none;">
-        <div class="container">
-            <div class="comment-form-wrapper">
-                <h3>Ohodnoťte tento projekt</h3>
-                <p>Vaša spätná väzba je pre nás dôležitá</p>
-                <form id="commentForm" class="comment-form">
-                    <div class="form-group">
-                        <label for="customerName" class="form-label">Vaše meno *</label>
-                        <input type="text" id="customerName" name="customer_name" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Hodnotenie *</label>
-                        <div class="rating-input" id="ratingInput">
-                            <span class="rating-star" data-rating="1">★</span>
-                            <span class="rating-star" data-rating="2">★</span>
-                            <span class="rating-star" data-rating="3">★</span>
-                            <span class="rating-star" data-rating="4">★</span>
-                            <span class="rating-star" data-rating="5">★</span>
-                        </div>
-                        <input type="hidden" id="ratingValue" name="rating" value="0">
-                        <div class="error-message" id="rating-error" role="alert"></div>
-                    </div>
-                    <div class="form-group">
-                        <label for="commentText" class="form-label">Váš komentár *</label>
-                        <textarea id="commentText" name="comment_text" class="form-input" rows="5" required placeholder="Popíšte vašu skúsenosť s projektom..."></textarea>
-                        <div class="error-message" id="comment-error" role="alert"></div>
-                    </div>
-                    <button type="submit" class="btn btn--primary btn--large">Odoslať hodnotenie</button>
-                </form>
-            </div>
-        </div>
-    </section>
-
     <section class="project-details">
         <div class="container">
             <div id="projectContent">
                 <div class="loading"><p>Načítavam projekt...</p></div>
-            </div>
-        </div>
-    </section>
-
-    <section class="project-comments">
-        <div class="container">
-            <h2 class="section-title">Hodnotenie zákazníka</h2>
-            <div id="commentsDisplay" class="comments-list">
-                <div id="commentsContainer"></div>
-                <div id="noComments" class="no-comments" style="display: none;">
-                    <p>Zatiaľ žiadne hodnotenie pre tento projekt.</p>
-                </div>
             </div>
         </div>
     </section>
@@ -140,12 +95,12 @@
     </div>
 </div>
 
-<script src="js/supabase-config.js?v=3"></script>
+<script src="js/supabase-config.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/supabase-client.js?v=3"></script>
-<script src="projects.js"></script>
-<script src="scripts.js"></script>
-<script src="js/site-images.js?v=3"></script>
+<script src="js/supabase-client.js?v=5"></script>
+<script src="projects.js?v=5"></script>
+<script src="scripts.js?v=5"></script>
+<script src="js/site-images.js?v=5"></script>
 <script src="cookie-consent.js"></script>
 </body>
 </html>

@@ -1,42 +1,21 @@
 /**
- * scripts.js - Complete JavaScript for StavMaster Construction Website
- * Pure vanilla JavaScript with modern ES6+ features
- * No external dependencies, progressive enhancement approach
+ * scripts.js - UKSTAV website (vanilla JS, no build step)
+ * - unified "Realizácie" gallery with filters
+ * - contact / quick forms: saved to Supabase + opened in WhatsApp
+ * - moderated reviews, project detail page, lightbox
  */
 
 // ===== CONSTANTS & CONFIGURATION =====
 const CONFIG = {
     PHONE_REGEX: /^[\+]?[\d\s\-\(\)]+$/,
-    NAME_REGEX: /^[a-zA-Zá-žÁ-Ž\s]+$/,
+    NAME_REGEX: /^[\p{L}\s.'’-]+$/u,
     SCROLL_THRESHOLD: 80,
-    PROJECTS_PER_LOAD: 9,
-    PROJECTS_PER_LOAD_ACTIVE_FILER: 50,
-    ANIMATION_DURATION: 300,
-    ADDITIONAL_PROJECTS_PER_LOAD: 3,
+    WORKS_PAGE_SIZE: 12,
+    // WhatsApp number that receives requests (international format, digits only)
+    WHATSAPP_NUMBER: '421950405659',
+    // Max time we wait for Supabase before opening WhatsApp anyway
+    SAVE_TIMEOUT_MS: 6000,
 };
-
-const FILTER_STATE = {
-    activeFilter: null
-};
-
-const translations = {
-    'bathroom_kitchen': 'Kúpeľne a kuchyne na mieru',
-    'reconstruction': 'Rekonštrukcie bytov a domov',
-    'tiles': 'Obklady a dlažby',
-    'house': 'Výstavba domov na kľúč',
-    'roof': 'Strechy a sadrokartón',
-    'facade': 'Fasády a zateplenie',
-    // 'insulation': 'zateplenie',
-    // 'sidewalk': 'chodníky',
-    // 'concrete': 'betón',
-    // 'apartment': 'byty',
-    // 'drainage': 'drenáž',
-    // 'garden': 'záhrada',
-    // 'paving': 'dlažba',
-    // 'kitchen': 'Kuchyne'
-};
-
-// Project data is loaded from projects.js
 
 // ===== UTILITY FUNCTIONS =====
 class Utils {
@@ -104,17 +83,11 @@ class Utils {
         // Simple phone formatting for Slovak numbers
         const cleaned = phone.replace(/\D/g, '');
         if (cleaned.startsWith('421')) {
-            return `+${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6, 9)} ${cleaned.slice(9)}`;
+            return '+' + [cleaned.slice(0, 3), cleaned.slice(3, 6), cleaned.slice(6, 9), cleaned.slice(9)]
+                .filter(Boolean)
+                .join(' ');
         }
         return phone;
-    }
-
-    static saveToLocalFile(data, filename = 'applications.txt') {
-        // In a real implementation, this would send to server
-        // For demo purposes, we'll save to localStorage
-        const existingData = localStorage.getItem('applications') || '';
-        const newData = `${existingData}\n${new Date().toISOString()}: ${JSON.stringify(data)}`;
-        localStorage.setItem('applications', newData);
     }
 }
 
@@ -131,9 +104,7 @@ class StavMasterWebsite {
     init() {
         this.setupEventListeners();
         this.initializeComponents();
-        this.checkFilterBeforeLoad();
-        this.loadInitialProjects();
-        this.initializeFiltering();
+        this.initWorks();
 
         // Check if we're on project page
         if (window.location.pathname.includes('project.html')) {
@@ -165,27 +136,14 @@ class StavMasterWebsite {
 
         // Window resize
         window.addEventListener('resize', Utils.debounce(this.handleResize.bind(this), 250));
-        const serviceCards = document.querySelectorAll('.service-card[data-filter]');
-        serviceCards.forEach(card => {
+        // Service cards jump to the gallery with the matching filter
+        document.querySelectorAll('.service-card[data-filter]').forEach(card => {
             card.addEventListener('click', () => {
                 const filter = card.dataset.filter;
-                if (filter) {
-                    // Update URL
-                    const url = new URL(window.location);
-                    url.searchParams.set('filter', filter);
-                    window.history.pushState({}, '', url);
-
-                    // Apply filter
-                    this.applyFilter(filter);
-
-                    // Scroll to works
-                    setTimeout(() => {
-                        Utils.smoothScroll('#works');
-                    }, 300);
-                }
+                if (!filter) return;
+                this.setWorksFilter(filter);
+                Utils.smoothScroll('#works');
             });
-
-            // Add hover effect cursor
             card.style.cursor = 'pointer';
         });
     }
@@ -201,130 +159,148 @@ class StavMasterWebsite {
         this.initReviews();
     }
 
-    checkFilterBeforeLoad() {
-        // Check URL for filter parameter BEFORE loading projects
-        const urlParams = new URLSearchParams(window.location.search);
-        const filterParam = urlParams.get('filter');
+    // ===== UNIFIED WORKS GALLERY (Realizácie + Galéria) =====
+    initWorks() {
+        this.worksState = { filter: 'all', visible: CONFIG.WORKS_PAGE_SIZE, photos: [], filtered: [] };
+        if (!document.getElementById('worksGrid')) return;
 
-        if (filterParam) {
-            FILTER_STATE.activeFilter = filterParam;
-        }
-    }
-
-    initializeFiltering() {
-        // Apply filter AFTER projects are loaded
-        if (FILTER_STATE.activeFilter) {
-            this.applyFilter(FILTER_STATE.activeFilter);
-            setTimeout(() => {
-                Utils.smoothScroll('#works');
-            }, 500);
-        }
-    }
-
-    applyFilter(keyword) {
-        FILTER_STATE.activeFilter = keyword;
-
-        // Clear existing projects
-        const worksGrid = document.getElementById('worksGrid');
-        if (worksGrid) {
-            worksGrid.innerHTML = '';
+        const fromUrl = new URLSearchParams(window.location.search).get('filter');
+        if (fromUrl && WORK_TYPES.some(t => t.key === fromUrl)) {
+            this.worksState.filter = fromUrl;
         }
 
-        // Load ALL projects
-        const projectKeys = getOrderedProjectKeys();
-        projectKeys.forEach(projectId => {
-            this.createProjectCard(PROJECTS[projectId], projectId);
-        });
-
-        // Now filter them
-        this.filterProjects(keyword);
-        this.updateFilterIndicator(keyword);
-    }
-
-    filterProjects(keyword) {
-        const projectCards = document.querySelectorAll('.work-card');
-        const keywords = keyword.split(',');
-        let visibleCount = 0;
-
-        projectCards.forEach(card => {
-            const projectId = card.dataset.projectId;
-            const project = PROJECTS[projectId];
-
-            const hasMatch = keywords.some(k =>
-                project && project.keywords && project.keywords.includes(k.trim())
-            );
-
-            if (!hasMatch) {
-                card.remove();
-            } else {
-                visibleCount++;
-            }
-        });
-
-        // Hide load more button when filtering
-        const loadMoreBtn = document.getElementById('loadMoreBtn');
-        if (loadMoreBtn) {
-            loadMoreBtn.style.display = 'none';
+        const loadMore = document.getElementById('loadMoreBtn');
+        if (loadMore) {
+            loadMore.addEventListener('click', () => {
+                this.worksState.visible += CONFIG.WORKS_PAGE_SIZE;
+                this.renderWorksGrid();
+            });
         }
+
+        const filters = document.getElementById('worksFilters');
+        if (filters) {
+            filters.addEventListener('click', (e) => {
+                const chip = e.target.closest('[data-work-filter]');
+                if (chip) this.setWorksFilter(chip.dataset.workFilter);
+            });
+        }
+
+        this.renderWorks();
     }
 
-    clearFilter() {
-        FILTER_STATE.activeFilter = null;
+    /** Rebuild the photo list (static projects + photos uploaded in admin) and redraw. */
+    renderWorks() {
+        const state = this.worksState;
+        if (!state || !document.getElementById('worksGrid')) return;
+        state.photos = buildPortfolioPhotos(window.UKSTAV_GALLERY_ROWS || []);
+        this.renderWorksFilters();
+        this.renderWorksGrid();
+    }
 
-        // Remove filter from URL
+    setWorksFilter(key) {
+        const state = this.worksState;
+        if (!state) return;
+        state.filter = WORK_TYPES.some(t => t.key === key) ? key : 'all';
+        state.visible = CONFIG.WORKS_PAGE_SIZE;
+
         const url = new URL(window.location);
-        url.searchParams.delete('filter');
-        window.history.pushState({}, '', url);
+        if (state.filter === 'all') url.searchParams.delete('filter');
+        else url.searchParams.set('filter', state.filter);
+        window.history.replaceState({}, '', url);
 
-        // Clear the grid completely
-        const worksGrid = document.getElementById('worksGrid');
-        if (worksGrid) {
-            worksGrid.innerHTML = '';
-        }
-
-        // Reload only PROJECTS_PER_LOAD projects
-        const projectKeys = getOrderedProjectKeys();
-        const initialProjects = projectKeys.slice(0, CONFIG.PROJECTS_PER_LOAD);
-
-        initialProjects.forEach(projectId => {
-            this.createProjectCard(PROJECTS[projectId], projectId);
-        });
-
-        this.loadedProjects = CONFIG.PROJECTS_PER_LOAD;
-
-        // Hide filter indicator
-        const indicator = document.getElementById('filterIndicator');
-        if (indicator) {
-            indicator.style.display = 'none';
-        }
-
-        // Show load more button if there are more projects
-        const loadMoreBtn = document.getElementById('loadMoreBtn');
-        if (loadMoreBtn && this.loadedProjects < projectKeys.length) {
-            loadMoreBtn.style.display = 'inline-block';
-        }
+        this.renderWorksFilters();
+        this.renderWorksGrid();
     }
 
-    updateFilterIndicator(keyword) {
-        const translatedKeyword = translations[keyword] || keyword;
+    renderWorksFilters() {
+        const state = this.worksState;
+        const root = document.getElementById('worksFilters');
+        if (!root || !state) return;
 
-        let indicator = document.getElementById('filterIndicator');
-        if (!indicator) {
-            const worksSection = document.querySelector('.works .container');
-            const sectionTitle = worksSection.querySelector('.section-title');
+        const counts = {};
+        WORK_TYPES.forEach(t => { counts[t.key] = 0; });
+        state.photos.forEach(p => p.types.forEach(k => { if (k in counts) counts[k] += 1; }));
 
-            indicator = document.createElement('div');
-            indicator.id = 'filterIndicator';
-            indicator.className = 'filter-indicator';
-            indicator.innerHTML = `
-            <span class="filter-indicator__text">Aktívny filter: <strong>${translatedKeyword}</strong></span>
-            <button class="btn btn--small btn--secondary" onclick="clearFilter()">Zobraziť všetky projekty</button>
-        `;
-            sectionTitle.after(indicator);
-        } else {
-            indicator.querySelector('.filter-indicator__text strong').textContent = translatedKeyword;
-            indicator.style.display = 'flex';
+        // A filter that has no photos at all would just show an empty page — hide it.
+        const items = [{ key: 'all', label: 'Všetko', count: state.photos.length }]
+            .concat(WORK_TYPES.filter(t => counts[t.key] > 0).map(t => ({ key: t.key, label: t.label, count: counts[t.key] })));
+        if (!items.some(i => i.key === state.filter)) state.filter = 'all';
+
+        root.replaceChildren();
+        items.forEach(item => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'filter-chip' + (item.key === state.filter ? ' is-active' : '');
+            btn.dataset.workFilter = item.key;
+            btn.setAttribute('aria-pressed', item.key === state.filter ? 'true' : 'false');
+            const label = document.createElement('span');
+            label.textContent = item.label;
+            const count = document.createElement('span');
+            count.className = 'filter-chip__count';
+            count.textContent = String(item.count);
+            btn.append(label, count);
+            root.appendChild(btn);
+        });
+    }
+
+    renderWorksGrid() {
+        const state = this.worksState;
+        const grid = document.getElementById('worksGrid');
+        if (!grid || !state) return;
+
+        state.filtered = state.filter === 'all'
+            ? state.photos
+            : state.photos.filter(p => p.types.includes(state.filter));
+
+        const shown = state.filtered.slice(0, state.visible);
+        grid.replaceChildren();
+
+        const frag = document.createDocumentFragment();
+        shown.forEach((photo, index) => {
+            const tile = document.createElement('button');
+            tile.type = 'button';
+            tile.className = 'work-tile';
+            tile.dataset.index = String(index);
+            tile.setAttribute('aria-label', `Zväčšiť fotku: ${photo.title}`);
+
+            const img = document.createElement('img');
+            img.src = photo.thumb;
+            img.alt = photo.alt;
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            img.width = 480;
+            img.height = 360;
+            // If a generated preview is missing, fall back to the full photo
+            img.addEventListener('error', () => {
+                if (img.src !== new URL(photo.src, document.baseURI).href) img.src = photo.src;
+            }, { once: true });
+
+            const cap = document.createElement('span');
+            cap.className = 'work-tile__cap';
+            cap.textContent = photo.title;
+
+            tile.append(img, cap);
+            tile.addEventListener('click', () => this.openWorksLightbox(index));
+            frag.appendChild(tile);
+        });
+        grid.appendChild(frag);
+
+        const status = document.getElementById('worksStatus');
+        if (status) {
+            status.textContent = state.filtered.length
+                ? `Zobrazených ${shown.length} z ${state.filtered.length} fotiek`
+                : 'V tejto kategórii zatiaľ nie sú fotky.';
         }
+
+        const loadMore = document.getElementById('loadMoreBtn');
+        if (loadMore) loadMore.hidden = shown.length >= state.filtered.length;
+    }
+
+    openWorksLightbox(index) {
+        const state = this.worksState;
+        if (!state || !state.filtered.length) return;
+        this.lightboxImages = state.filtered;
+        this.openLightbox(index);
     }
 
     updateProgressBar() {
@@ -497,6 +473,7 @@ class StavMasterWebsite {
         let isFormValid = true;
 
         fields.forEach(field => {
+            if (field.name === 'website') return; // honeypot
             if (!this.validateField(field)) {
                 isFormValid = false;
             }
@@ -514,10 +491,8 @@ class StavMasterWebsite {
         submitBtn.disabled = true;
 
         try {
-            await this.submitFormData({ ...data, source: 'contact' });
-
-            // Show success
-            this.showSuccessModal();
+            const result = await this.sendRequest({ ...data, source: 'contact' });
+            this.showSuccessModal(null, result);
             form.reset();
 
             // Clear validation states
@@ -528,7 +503,6 @@ class StavMasterWebsite {
                     errorElement.classList.remove('visible');
                 }
             });
-
         } catch (error) {
             this.showFormError(error?.message || 'Nastala chyba pri odosielaní. Skúste znova.');
             console.error('Form submission error:', error);
@@ -557,9 +531,9 @@ class StavMasterWebsite {
         submitBtn.disabled = true;
 
         try {
-            await this.submitFormData({ ...data, source: 'quick' });
+            const result = await this.sendRequest({ ...data, source: 'quick' });
             this.closeContactModal();
-            this.showSuccessModal(data.callback_time);
+            this.showSuccessModal(data.callback_time, result);
             form.reset();
         } catch (error) {
             alert(error?.message || 'Nastala chyba pri odosielaní. Skúste znova.');
@@ -570,12 +544,80 @@ class StavMasterWebsite {
         }
     }
 
+    /**
+     * One request = two deliveries:
+     *  1) saved in Supabase (leads table, visible in admin) — best effort, never blocks WhatsApp
+     *  2) opened in WhatsApp with the message prefilled; the customer only presses "Send"
+     * Returns { saved, whatsappUrl, whatsappOpened }.
+     */
+    async sendRequest(data) {
+        // Honeypot: bots fill hidden fields. Pretend success, send nothing.
+        if (data.website) {
+            return { saved: true, whatsappUrl: null, whatsappOpened: false, bot: true };
+        }
+
+        const whatsappUrl = this.buildWhatsAppUrl(data);
+        // Must be opened synchronously inside the click/submit handler, otherwise
+        // mobile browsers treat it as a pop-up and block it.
+        const waWindow = this.openWhatsAppWindow();
+
+        let saved = false;
+        try {
+            await Promise.race([
+                this.submitFormData(data),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), CONFIG.SAVE_TIMEOUT_MS)),
+            ]);
+            saved = true;
+        } catch (err) {
+            console.error('Lead not saved to Supabase (WhatsApp still opens):', err);
+        }
+
+        let whatsappOpened = false;
+        if (waWindow && !waWindow.closed) {
+            try {
+                waWindow.location.replace(whatsappUrl);
+                whatsappOpened = true;
+            } catch (err) {
+                console.error('WhatsApp window error:', err);
+            }
+        }
+        return { saved, whatsappUrl, whatsappOpened };
+    }
+
+    buildWhatsAppUrl(data) {
+        const clean = (v, max) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, max);
+        const lines = [
+            'Dobrý deň, posielam požiadavku z webu ukstav.sk:',
+            `Meno: ${clean(data.name, 120)}`,
+            `Telefón: ${clean(data.phone, 40)}`,
+        ];
+        const description = clean(data.description, 700);
+        if (description) lines.push(`Popis: ${description}`);
+        const callback = clean(data.callback_time, 40);
+        if (callback) lines.push(`Kedy zavolať: ${callback}`);
+        return `https://wa.me/${CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
+    }
+
+    openWhatsAppWindow() {
+        try {
+            const win = window.open('', '_blank');
+            if (!win) return null;
+            try {
+                win.opener = null;
+                win.document.title = 'WhatsApp';
+                win.document.body.style.cssText = 'font-family:sans-serif;background:#121212;color:#fafafa;padding:2rem';
+                win.document.body.textContent = 'Otváram WhatsApp…';
+            } catch (_) { /* cross-origin after navigation — ignore */ }
+            return win;
+        } catch (_) {
+            return null;
+        }
+    }
+
     async submitFormData(data) {
         const api = window.UkstavLeads;
         if (!api?.configured) {
-            throw new Error(
-                'Formulár ešte nie je napojený. Doplňte js/supabase-config.js (pozri SUPABASE.md) alebo nás kontaktujte telefonicky / WhatsApp.',
-            );
+            throw new Error('Supabase nie je nakonfigurovaný.');
         }
         try {
             return await api.submitLead(data);
@@ -610,65 +652,6 @@ class StavMasterWebsite {
         }
     }
 
-    loadInitialProjects() {
-        const worksGrid = document.getElementById('worksGrid');
-        if (!worksGrid) return;
-
-        const projectKeys = getOrderedProjectKeys();
-        // const projectsToLoad = projectKeys.slice(0, 10);
-
-        // If filter is active, load ALL projects, otherwise load limited
-        const projectsToLoad = FILTER_STATE.activeFilter
-            ? projectKeys.slice(0, CONFIG.PROJECTS_PER_LOAD_ACTIVE_FILER)
-            : projectKeys.slice(0, CONFIG.PROJECTS_PER_LOAD);
-
-        projectsToLoad.forEach(projectId => {
-            this.createProjectCard(PROJECTS[projectId], projectId);
-        });
-
-        this.loadedProjects = projectsToLoad.length;
-
-        // Hide load more button if no more projects OR filter is active
-        const loadMoreBtn = document.getElementById('loadMoreBtn');
-        if (loadMoreBtn && (this.loadedProjects >= projectKeys.length || FILTER_STATE.activeFilter)) {
-            loadMoreBtn.style.display = 'none';
-        }
-    }
-
-    createProjectCard(project, projectId) {
-        const worksGrid = document.getElementById('worksGrid');
-        if (!worksGrid) return;
-
-        const card = document.createElement('article');
-        card.className = 'work-card animate-in';
-        card.dataset.projectId = projectId;
-        card.setAttribute('data-project', projectId);
-        const managedCover = window.UKSTAV_WORK_COVERS?.[projectId]?.url;
-        const coverImage = managedCover || (project.images && project.images[0]) || project.thumbnail;
-        const coverAlt = window.UKSTAV_WORK_COVERS?.[projectId]?.alt || project.title;
-        card.innerHTML = `
-      <div class="work-card__image">
-        <img src="${coverImage}" alt="${coverAlt}" loading="lazy" width="400" height="250">
-      </div>
-      <div class="work-card__gallery">
-        ${project.gallery.map(thumb => `
-          <div class="work-card__thumb">
-            <img src="${thumb}" alt="${project.title}" loading="lazy" width="60" height="60">
-          </div>
-        `).join('')}
-      </div>
-      <div class="work-card__content">
-        <h3 class="work-card__title">${project.title}</h3>
-        <p class="work-card__description">${project.subtitle}</p>
-        <a href="project.html?id=${projectId}" class="btn btn--primary">
-          Podrobnosti
-        </a>
-      </div>
-    `;
-
-        worksGrid.appendChild(card);
-    }
-
     setupIntersectionObserver() {
         if (!window.IntersectionObserver) return;
 
@@ -685,7 +668,7 @@ class StavMasterWebsite {
         });
 
         // Observe elements that should animate in
-        const animateElements = document.querySelectorAll('.work-card, .team-card, .review-card, .pricing-step');
+        const animateElements = document.querySelectorAll('.team-card, .review-card, .pricing-step');
         animateElements.forEach(el => observer.observe(el));
     }
 
@@ -863,14 +846,16 @@ class StavMasterWebsite {
     }
 
     handleKeyboard(e) {
-        // Escape key handling
         if (e.key === 'Escape') {
             this.closeAllModals();
+            return;
         }
 
-        // Enter key for buttons
-        if (e.key === 'Enter' && e.target.matches('button, .btn')) {
-            e.target.click();
+        // Arrow keys flip through photos while the lightbox is open
+        const lightbox = document.getElementById('lightbox');
+        if (lightbox && lightbox.classList.contains('active')) {
+            if (e.key === 'ArrowRight') this.nextImage();
+            else if (e.key === 'ArrowLeft') this.prevImage();
         }
     }
 
@@ -885,19 +870,13 @@ class StavMasterWebsite {
     initProjectPage() {
         const urlParams = new URLSearchParams(window.location.search);
         const projectId = urlParams.get('id');
-        const token = urlParams.get('token');
 
-        if (!projectId || !PROJECTS[projectId]) {
+        if (!projectId || !Object.prototype.hasOwnProperty.call(PROJECTS, projectId)) {
             this.showProjectError();
             return;
         }
 
         this.loadProject(PROJECTS[projectId]);
-        this.loadProjectComments(projectId);
-
-        if (token) {
-            this.validateCommentToken(projectId, token);
-        }
     }
 
     loadProject(project) {
@@ -947,7 +926,11 @@ class StavMasterWebsite {
     `;
 
         // Store images for lightbox
-        this.lightboxImages = project.images;
+        this.lightboxImages = project.images.map((src, index) => ({
+            src,
+            title: project.title,
+            alt: `${project.title} - foto ${index + 1}`,
+        }));
 
         // Update page title
         document.title = `${project.title} - UKstav`;
@@ -995,20 +978,42 @@ class StavMasterWebsite {
         }
     }
 
-    showSuccessModal(callbackTime) {
+    showSuccessModal(callbackTime, result = {}) {
         const modal = document.getElementById('successModal');
         const messageElement = document.getElementById('successMessage');
+        const waLink = document.getElementById('successWhatsapp');
+        if (!modal || !messageElement) return;
 
-        let message = 'Vaša požiadavka bola prijatá! ';
-
-        if (callbackTime) {
-            message += `Zavoláme vám ${callbackTime}.`;
+        let message;
+        if (result.bot) {
+            message = 'Ďakujeme!';
+        } else if (result.saved) {
+            message = 'Vaša požiadavka bola prijatá! ';
+            message += callbackTime
+                ? `Zavoláme vám ${callbackTime}. `
+                : 'Spojíme sa s vami do 2 hodín. ';
+            if (result.whatsappUrl) {
+                message += 'V okne WhatsApp stlačte „Odoslať“ — správa nám príde hneď.';
+            }
         } else {
-            message += 'Spojíme sa s vami do 2 hodín pre upresnenie detailov a dohodnutie stretnutia.';
+            message = 'Požiadavku sa nepodarilo uložiť na server. Stlačte tlačidlo nižšie a odošlite ju cez WhatsApp — alebo nám zavolajte na +421 950 405 659.';
+        }
+        messageElement.textContent = message;
+
+        if (waLink) {
+            if (result.whatsappUrl) {
+                waLink.href = result.whatsappUrl;
+                waLink.hidden = false;
+                waLink.textContent = result.whatsappOpened
+                    ? 'Otvoriť WhatsApp znova'
+                    : 'Otvoriť WhatsApp a odoslať správu';
+            } else {
+                waLink.hidden = true;
+            }
         }
 
-        messageElement.textContent = message;
         modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
     }
 
@@ -1071,158 +1076,37 @@ class StavMasterWebsite {
         const image = document.getElementById('lightboxImage');
         const caption = document.getElementById('lightboxCaption');
         const counter = document.getElementById('lightboxCounter');
+        const items = this.lightboxImages || [];
+        const item = items[this.currentLightboxIndex];
+        if (!item) return;
 
-        if (image && this.lightboxImages) {
-            image.src = this.lightboxImages[this.currentLightboxIndex];
-            image.alt = `Obrázok ${this.currentLightboxIndex + 1}`;
+        const src = typeof item === 'string' ? item : item.src;
+        const title = typeof item === 'string' ? `Obrázok ${this.currentLightboxIndex + 1}` : (item.title || '');
+
+        if (image) {
+            image.src = src;
+            image.alt = (typeof item === 'object' && item.alt) || title;
         }
 
         if (caption) {
-            caption.textContent = `Obrázok ${this.currentLightboxIndex + 1}`;
+            caption.replaceChildren();
+            if (title) {
+                const strong = document.createElement('strong');
+                strong.textContent = title;
+                caption.appendChild(strong);
+            }
+            if (typeof item === 'object' && item.projectId && Object.prototype.hasOwnProperty.call(PROJECTS, item.projectId)) {
+                const link = document.createElement('a');
+                link.href = `project.html?id=${encodeURIComponent(item.projectId)}`;
+                link.className = 'lightbox__link';
+                link.textContent = 'Podrobnosti projektu →';
+                caption.append(' ', link);
+            }
         }
 
         if (counter) {
-            counter.textContent = `${this.currentLightboxIndex + 1} / ${this.lightboxImages.length}`;
+            counter.textContent = `${this.currentLightboxIndex + 1} / ${items.length}`;
         }
-    }
-
-    // Add after initProjectPage method
-    async validateCommentToken(projectId, token) {
-        try {
-            const response = await fetch(`db/validate-token.php?token=${token}&project_id=${projectId}`);
-            const result = await response.json();
-
-            if (result.success) {
-                const formContainer = document.getElementById('commentFormContainer');
-                if (formContainer) {
-                    formContainer.style.display = 'block';
-
-                    const nameInput = document.getElementById('customerName');
-                    if (nameInput && result.data.customer_name) {
-                        nameInput.value = result.data.customer_name;
-                    }
-
-                    this.setupCommentForm(projectId, token);
-                }
-            }
-        } catch (error) {
-            console.error('Token validation error:', error);
-        }
-    }
-
-    setupCommentForm(projectId, token) {
-        const form = document.getElementById('commentForm');
-        const ratingStars = document.querySelectorAll('.rating-star');
-        const ratingValue = document.getElementById('ratingValue');
-
-        ratingStars.forEach(star => {
-            star.addEventListener('click', () => {
-                const rating = parseInt(star.dataset.rating);
-                ratingValue.value = rating;
-
-                ratingStars.forEach(s => {
-                    const starRating = parseInt(s.dataset.rating);
-                    s.classList.toggle('active', starRating <= rating);
-                });
-            });
-        });
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const customerName = document.getElementById('customerName').value.trim();
-            const rating = parseInt(ratingValue.value);
-            const commentText = document.getElementById('commentText').value.trim();
-
-            if (!customerName || rating < 1 || !commentText) {
-                alert('Prosím vyplňte všetky polia');
-                return;
-            }
-
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.textContent;
-            submitBtn.textContent = 'Odosielam...';
-            submitBtn.disabled = true;
-
-            try {
-                const response = await fetch('db/submit-comment.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        token: token,
-                        project_id: projectId,
-                        customer_name: customerName,
-                        rating: rating,
-                        comment_text: commentText
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    alert('Ďakujeme za vaše hodnotenie!');
-                    form.reset();
-                    document.getElementById('commentFormContainer').style.display = 'none';
-                    this.loadProjectComments(projectId);
-                } else {
-                    alert(result.message || 'Chyba pri odosielaní');
-                }
-            } catch (error) {
-                alert('Chyba pri odosielaní komentára');
-                console.error('Comment submission error:', error);
-            } finally {
-                submitBtn.textContent = originalText;
-                submitBtn.disabled = false;
-            }
-        });
-    }
-
-    async loadProjectComments(projectId) {
-        try {
-            const response = await fetch(`db/get-comments.php?project_id=${projectId}`);
-            const result = await response.json();
-
-            const container = document.getElementById('commentsContainer');
-            const noComments = document.getElementById('noComments');
-
-            if (result.success && result.comments.length > 0) {
-                container.innerHTML = result.comments.map(comment => `
-        <div class="comment-card">
-          <div class="comment-header">
-            <span class="comment-author">${this.escapeHtml(comment.customer_name)}</span>
-            <div class="comment-rating">
-              ${'★'.repeat(comment.rating)}${'☆'.repeat(5 - comment.rating)}
-            </div>
-          </div>
-          <p class="comment-text">${this.escapeHtml(comment.comment_text)}</p>
-          <div class="comment-date">${this.formatDate(comment.created_at)}</div>
-        </div>
-      `).join('');
-                noComments.style.display = 'none';
-            } else {
-                container.innerHTML = '';
-                noComments.style.display = 'block';
-            }
-        } catch (error) {
-            console.error('Error loading comments:', error);
-        }
-    }
-
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('sk-SK', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
     }
 }
 
@@ -1241,27 +1125,6 @@ function closeSuccessModal() {
 
 function scrollToContact() {
     Utils.smoothScroll('#contact');
-}
-
-function loadMoreProjects() {
-    const projectKeys = getOrderedProjectKeys();
-    const remainingProjects = projectKeys.slice(window.app.loadedProjects, window.app.loadedProjects + CONFIG.ADDITIONAL_PROJECTS_PER_LOAD); // Load 1 at a time
-
-    remainingProjects.forEach(projectId => {
-        window.app.createProjectCard(PROJECTS[projectId], projectId);
-    });
-
-    window.app.loadedProjects += remainingProjects.length;
-
-    // Hide button if no more projects
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
-    if (loadMoreBtn && window.app.loadedProjects >= projectKeys.length) {
-        loadMoreBtn.style.display = 'none';
-    }
-}
-
-function clearFilter() {
-    window.app.clearFilter();
 }
 
 function openLightbox(index) {
@@ -1288,7 +1151,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add some debugging info
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         console.log('🏗️ StavMaster Website initialized');
-        console.log('Dostupné projekty:', getOrderedProjectKeys());
         console.log('App instance:', window.app);
     }
 });

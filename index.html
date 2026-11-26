@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=5">
     <link rel="icon" type="image/png" href="images/ukstav_logo_2.png">
 </head>
 <body>
@@ -136,33 +136,16 @@
         <div class="container">
             <div class="section-heading">
                 <h2 class="section-title">Realizácie</h2>
-                <p class="section-lead">Skutočné projekty z Bratislavy a okolia — bez stock fotografií.</p>
+                <p class="section-lead">Skutočné fotografie z našich stavieb v Bratislave a okolí — vyberte typ prác.</p>
             </div>
-            <div class="works__grid" id="worksGrid"></div>
+            <div class="works-filters" id="worksFilters" role="toolbar" aria-label="Filter realizácií"></div>
+            <p class="works-status" id="worksStatus" role="status" aria-live="polite"></p>
+            <div class="works-grid" id="worksGrid"></div>
+            <noscript><p class="works-status">Pre zobrazenie realizácií zapnite JavaScript.</p></noscript>
             <div class="works__actions">
-                <button class="btn btn--ghost" id="loadMoreBtn" onclick="loadMoreProjects()">
-                    Načítať ďalšie projekty <span aria-hidden="true">→</span>
+                <button type="button" class="btn btn--ghost" id="loadMoreBtn" hidden>
+                    Zobraziť ďalšie fotky <span aria-hidden="true">→</span>
                 </button>
-            </div>
-        </div>
-    </section>
-
-    <section class="gallery" id="gallery">
-        <div class="container">
-            <div class="section-heading">
-                <h2 class="section-title">Galéria</h2>
-                <p class="section-lead">Výber fotografií priamo z našich stavieb.</p>
-            </div>
-            <div class="gallery-grid" id="siteGallery">
-                <figure class="gallery-item"><img src="images/ukstav_header_logo_3.jpg" alt="Hotová realizácia — záhradný objekt" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project2-8.jpg" alt="Hruba stavba — debnenie a výstuž" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project3-1.jpg" alt="Výstavba domu — krov" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project1-1.jpg" alt="Moderná kúpeľňa" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project5-1.jpeg" alt="Rekonštrukcia bytu" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project4-1.jpeg" alt="Chodníky okolo domu" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project7-1.jpeg" alt="Rekonštrukcia kuchyne" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project10-1.jpeg" alt="Rekonštrukcia masážneho salónu" loading="lazy"></figure>
-                <figure class="gallery-item"><img src="images/project8-1.jpeg" alt="Minimalistická kúpeľňa" loading="lazy"></figure>
             </div>
         </div>
     </section>
@@ -367,6 +350,10 @@
                 </div>
 
                 <form class="contact-form" id="contactForm" novalidate>
+                    <div class="hp-field" aria-hidden="true">
+                        <label for="website">Web (nevyplňujte)</label>
+                        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+                    </div>
                     <div class="form-group">
                         <label for="name" class="form-label">Meno *</label>
                         <input type="text" id="name" name="name" class="form-input" required aria-describedby="name-error">
@@ -393,6 +380,7 @@
                     <button type="submit" class="btn btn--primary btn--large btn--full-width">
                         Poslať požiadavku <span aria-hidden="true">→</span>
                     </button>
+                    <p class="form-hint">Po odoslaní sa otvorí WhatsApp s hotovou správou — stačí stlačiť <strong>Odoslať</strong>. Požiadavku máme uloženú aj tak.</p>
                 </form>
             </div>
         </div>
@@ -447,12 +435,22 @@
             <p>IČO: 57 177 945 · DIČ: 2122 599 974 · IČ DPH: SK2122599974</p>
             <p>
                 <a href="ochrana-osobnych-udajov.html" class="footer__legal-link">Ochrana osobných údajov</a>
-                <span class="footer__sep" aria-hidden="true"> · </span>
-                <a href="admin.html" class="footer__legal-link">Admin</a>
             </p>
         </div>
     </div>
 </footer>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Fotografia" aria-hidden="true">
+    <div class="lightbox__backdrop" onclick="closeLightbox()"></div>
+    <div class="lightbox__content">
+        <button type="button" class="lightbox__close" onclick="closeLightbox()" aria-label="Zavrieť">×</button>
+        <button type="button" class="lightbox__prev" onclick="prevImage()" aria-label="Predchádzajúca fotka">‹</button>
+        <button type="button" class="lightbox__next" onclick="nextImage()" aria-label="Nasledujúca fotka">›</button>
+        <img class="lightbox__image" id="lightboxImage" alt="">
+        <div class="lightbox__caption" id="lightboxCaption"></div>
+        <div class="lightbox__counter" id="lightboxCounter"></div>
+    </div>
+</div>
 
 <div class="modal" id="contactModal" role="dialog" aria-labelledby="modalTitle" aria-hidden="true">
     <div class="modal__backdrop" onclick="closeContactModal()"></div>
@@ -462,6 +460,10 @@
             <button class="modal__close" onclick="closeContactModal()" aria-label="Zavrieť">×</button>
         </div>
         <form class="modal__form" id="quickContactForm">
+            <div class="hp-field" aria-hidden="true">
+                <label for="quickWebsite">Web (nevyplňujte)</label>
+                <input type="text" id="quickWebsite" name="website" tabindex="-1" autocomplete="off">
+            </div>
             <div class="form-group">
                 <label for="quickName" class="form-label">Meno *</label>
                 <input type="text" id="quickName" name="name" class="form-input" required>
@@ -488,17 +490,18 @@
         </div>
         <div class="modal__body">
             <p id="successMessage">Vaša požiadavka bola prijatá! Spojíme sa s vami do 2 hodín.</p>
-            <button class="btn btn--primary" onclick="closeSuccessModal()">Rozumiem</button>
+            <a id="successWhatsapp" class="btn btn--whatsapp btn--full-width" href="https://wa.me/421950405659" target="_blank" rel="noopener" hidden>Otvoriť WhatsApp a odoslať správu</a>
+            <button class="btn btn--primary btn--full-width" onclick="closeSuccessModal()">Rozumiem</button>
         </div>
     </div>
 </div>
 
-<script src="js/supabase-config.js?v=4"></script>
+<script src="js/supabase-config.js?v=5"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/supabase-client.js?v=4"></script>
-<script src="projects.js"></script>
-<script src="scripts.js?v=4"></script>
-<script src="js/site-images.js?v=3"></script>
+<script src="js/supabase-client.js?v=5"></script>
+<script src="projects.js?v=5"></script>
+<script src="scripts.js?v=5"></script>
+<script src="js/site-images.js?v=5"></script>
 <script src="cookie-consent.js"></script>
 </body>
 </html>
