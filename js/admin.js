@@ -482,6 +482,27 @@
     return /^\d{9,15}$/.test(d) ? d : ''
   }
 
+  /** Small delivery status under a lead: did the automatic WhatsApp notification go out? */
+  function notifyLine(row) {
+    if (row.notified_at) {
+      const via = String(row.notify_channel || 'whatsapp')
+        .split(',')
+        .map((c) => (c === 'telegram' ? 'Telegram' : 'WhatsApp'))
+        .join(' + ')
+      return `<p class="lead-card__notify lead-card__notify--ok">✓ Odoslané na ${escapeHtml(via)}</p>`
+    }
+    if (row.notify_error === 'not_configured') {
+      return '<p class="lead-card__notify lead-card__notify--warn">⚠ Automatické odoslanie na WhatsApp ešte nie je nastavené (pozri SUPABASE.md)</p>'
+    }
+    if (row.notify_error === 'rate_limited') {
+      return '<p class="lead-card__notify lead-card__notify--warn">⚠ Príliš veľa dopytov za hodinu — upozornenie sa neodoslalo, dopyt je uložený tu</p>'
+    }
+    if (row.notify_error) {
+      return `<p class="lead-card__notify lead-card__notify--warn">⚠ Odoslanie zlyhalo: ${escapeHtml(String(row.notify_error).slice(0, 200))}</p>`
+    }
+    return ''
+  }
+
   async function refreshLeads() {
     if (!leadsList || demoMode) {
       if (leadsEmpty) {
@@ -522,6 +543,7 @@
                 : ''
             }</p>
             ${row.description ? `<p class="lead-card__desc">${escapeHtml(row.description)}</p>` : ''}
+            ${notifyLine(row)}
           </div>
           <div class="lead-card__actions">
             <label class="lead-edit">Stav

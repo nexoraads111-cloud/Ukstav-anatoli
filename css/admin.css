@@ -673,3 +673,15 @@ code {
   justify-content: center;
   margin-top: 1rem;
 }
+
+/* Automatic WhatsApp delivery status on a lead */
+.lead-card__notify {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+}
+.lead-card__notify--ok {
+  color: #15803d;
+}
+.lead-card__notify--warn {
+  color: #b45309;
+}

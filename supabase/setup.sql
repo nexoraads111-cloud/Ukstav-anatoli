@@ -70,8 +70,16 @@ create table if not exists public.leads (
     check (status in ('new', 'contacted', 'done', 'spam')),
   notes text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  -- WhatsApp/Telegram delivery tracking (written only by the notify-lead Edge Function)
+  notified_at timestamptz,
+  notify_channel text,
+  notify_error text
 );
+
+alter table public.leads add column if not exists notified_at timestamptz;
+alter table public.leads add column if not exists notify_channel text;
+alter table public.leads add column if not exists notify_error text;
 
 create index if not exists leads_created_at_idx on public.leads (created_at desc);
 create index if not exists leads_status_idx on public.leads (status);
@@ -112,6 +120,35 @@ create trigger leads_throttle
   before insert on public.leads
   for each row execute function public.leads_throttle();
 
+-- Instant delivery of every new lead to WhatsApp: the trigger asks the `notify-lead` Edge Function
+-- (supabase/functions/notify-lead, secrets in Dashboard → Edge Functions → Secrets) to send it.
+-- The call is asynchronous (pg_net) and wrapped so a failure can NEVER block saving the lead.
+-- If you use another Supabase project, change the URL below to https://<project-ref>.supabase.co/functions/v1/notify-lead
+create extension if not exists pg_net with schema extensions;
+
+create or replace function public.leads_notify()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  begin
+    perform net.http_post(
+      url := 'https://gqcogdqqgxzuteaoaxza.supabase.co/functions/v1/notify-lead',
+      headers := jsonb_build_object('Content-Type', 'application/json'),
+      body := jsonb_build_object('lead_id', new.id),
+      timeout_milliseconds := 5000
+    );
+  exception when others then
+    null;
+  end;
+  return new;
+end;
+$$;
+
+revoke execute on function public.leads_notify() from public, anon, authenticated;
+
+create or replace trigger leads_notify
+  after insert on public.leads
+  for each row execute function public.leads_notify();
+
 alter table public.leads enable row level security;
 
 revoke all on table public.leads from anon, authenticated;
@@ -119,6 +156,8 @@ grant usage on schema public to anon, authenticated;
 grant insert on table public.leads to anon, authenticated;
 grant select, delete on table public.leads to authenticated;
 grant update (status, notes) on table public.leads to authenticated;
+-- The notify-lead Edge Function (service role) reads the lead and records the delivery result.
+grant select, update on table public.leads to service_role;
 
 do $$
 declare r record;
@@ -144,6 +183,9 @@ create policy "leads_insert_public"
     and coalesce(source, 'contact') in ('contact', 'quick')
     and coalesce(status, 'new') = 'new'
     and notes is null
+    and notified_at is null
+    and notify_channel is null
+    and notify_error is null
   );
 
 create policy "leads_select_admin"
