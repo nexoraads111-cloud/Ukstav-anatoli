@@ -1,6 +1,10 @@
 /**
  * Shared Supabase browser client for UKSTAV (leads + site photo CMS + reviews).
  * Requires js/supabase-config.js + @supabase/supabase-js UMD CDN.
+ *
+ * Security model: this file only ever holds the public anon key. All writes to
+ * photos / leads / reviews are limited to the admin account by Row Level Security
+ * (supabase/setup.sql) — hiding or changing this JS cannot grant extra rights.
  */
 ;(function (global) {
   const cfg = global.UKSTAV_SUPABASE || {}
@@ -32,9 +36,9 @@
     brand: 'Logo / značka',
     hero: 'Hero',
     services: 'Služby',
-    gallery: 'Galéria',
+    gallery: 'Realizácie a galéria (pridať fotky)',
     team: 'Tím',
-    works: 'Realizácie (všetky fotky)',
+    works: 'Nahradiť fotku projektu',
   }
 
   const FIXED_SLOTS = {
@@ -172,6 +176,8 @@
       storagePath: row.storage_path,
       alt: row.alt_text || '',
       sortOrder: row.sort_order ?? 0,
+      workTypes: Array.isArray(row.work_types) ? row.work_types : [],
+      projectId: row.project_id || null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       url: publicUrl(row.storage_path),
@@ -190,6 +196,9 @@
     return (data || []).map(mapImageRow)
   }
 
+  const MAX_SOURCE_BYTES = 40 * 1024 * 1024
+  const MAX_EDGE = 1800
+
   function normalizeFile(file) {
     let type = (file.type || '').toLowerCase()
     if (!type || type === 'application/octet-stream') {
@@ -197,32 +206,100 @@
       if (name.endsWith('.jpg') || name.endsWith('.jpeg')) type = 'image/jpeg'
       else if (name.endsWith('.png')) type = 'image/png'
       else if (name.endsWith('.webp')) type = 'image/webp'
+      else if (name.endsWith('.heic')) type = 'image/heic'
+      else if (name.endsWith('.heif')) type = 'image/heif'
     }
     if (type === 'image/jpg' || type === 'image/pjpeg') type = 'image/jpeg'
     if (type === file.type) return file
     return new File([file], file.name, { type, lastModified: file.lastModified })
   }
 
-  function validateFiles(fileList, { max = 10 } = {}) {
+  /**
+   * Check the picked files. With `resize: true` (photos) any image type is accepted up to
+   * 40 MB because it is shrunk in the browser before upload (phone photos are often 5-10 MB
+   * or HEIC). Without it (logos) the strict JPEG/PNG/WebP + 5 MB rule applies.
+   */
+  function validateFiles(fileList, { max = 10, resize = true } = {}) {
     const files = Array.from(fileList || []).map(normalizeFile)
     if (!files.length) return { ok: false, error: 'Vyberte aspoň jednu fotografiu.' }
     if (files.length > max) return { ok: false, error: `Naraz najviac ${max} súborov.` }
     for (const file of files) {
-      if (!ALLOWED_TYPES[file.type]) {
-        return {
-          ok: false,
-          error: `Nepodporovaný formát: ${file.name}. Povolené: JPEG, PNG, WebP.`,
+      if (resize) {
+        if (!/^image\//.test(file.type)) {
+          return { ok: false, error: `${file.name} nie je obrázok.` }
         }
-      }
-      if (file.size > MAX_BYTES) {
-        return { ok: false, error: `${file.name} je väčší než 5 MB.` }
+        if (file.size > MAX_SOURCE_BYTES) {
+          return { ok: false, error: `${file.name} je väčší než 40 MB.` }
+        }
+      } else {
+        if (!ALLOWED_TYPES[file.type]) {
+          return {
+            ok: false,
+            error: `Nepodporovaný formát: ${file.name}. Povolené: JPEG, PNG, WebP.`,
+          }
+        }
+        if (file.size > MAX_BYTES) {
+          return { ok: false, error: `${file.name} je väčší než 5 MB.` }
+        }
       }
     }
     return { ok: true, files }
   }
 
-  async function uploadImageFile(file, userId) {
-    const normalized = normalizeFile(file)
+  async function decodeImage(file) {
+    if (typeof global.createImageBitmap === 'function') {
+      try {
+        return await global.createImageBitmap(file, { imageOrientation: 'from-image' })
+      } catch (_) {
+        /* fall back to <img> */
+      }
+    }
+    const objectUrl = URL.createObjectURL(file)
+    try {
+      return await new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => resolve(img)
+        img.onerror = () => reject(new Error('decode'))
+        img.src = objectUrl
+      })
+    } finally {
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000)
+    }
+  }
+
+  /** Shrink to max 1800 px and re-encode as JPEG (~200-500 KB). Returns a File ready for upload. */
+  async function prepareImage(file) {
+    const source = normalizeFile(file)
+    let bitmap
+    try {
+      bitmap = await decodeImage(source)
+    } catch (_) {
+      // Browser cannot read it (e.g. HEIC in Chrome). Small supported files can still go as-is.
+      if (ALLOWED_TYPES[source.type] && source.size <= MAX_BYTES) return source
+      throw new Error(
+        `${source.name}: formát sa nepodarilo načítať. Uložte fotku ako JPEG (alebo odfoťte znova) a skúste to ešte raz.`,
+      )
+    }
+    const w = bitmap.width || bitmap.naturalWidth
+    const h = bitmap.height || bitmap.naturalHeight
+    const scale = Math.min(1, MAX_EDGE / Math.max(w, h))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(w * scale))
+    canvas.height = Math.max(1, Math.round(h * scale))
+    const ctx = canvas.getContext('2d')
+    ctx.fillStyle = '#ffffff' // JPEG has no transparency
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    if (bitmap.close) bitmap.close()
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.84))
+    if (!blob) throw new Error(`${source.name}: nepodarilo sa spracovať obrázok.`)
+    if (blob.size > MAX_BYTES) throw new Error(`${source.name}: po zmenšení je stále väčší než 5 MB.`)
+    const base = (source.name || 'foto').replace(/\.[^.]+$/, '')
+    return new File([blob], `${base}.jpg`, { type: 'image/jpeg', lastModified: Date.now() })
+  }
+
+  async function uploadImageFile(file, userId, { resize = true } = {}) {
+    const normalized = resize ? await prepareImage(file) : normalizeFile(file)
     const ext = ALLOWED_TYPES[normalized.type]
     if (!ext) throw new Error(`Nepodporovaný typ: ${normalized.type || 'neznámy'}`)
     if (!userId) throw new Error('Nie ste prihlásení.')
@@ -238,15 +315,17 @@
     return path
   }
 
-  async function addSiteImage({ file, category, slot, altText, sortOrder, userId }) {
+  async function addSiteImage({ file, category, slot, altText, sortOrder, userId, workTypes, projectId }) {
     if (!db) throw new Error('Supabase nie je nakonfigurovaný.')
-    const path = await uploadImageFile(file, userId)
+    const path = await uploadImageFile(file, userId, { resize: category !== 'brand' })
     const row = {
       category,
       slot: slot || null,
       storage_path: path,
-      alt_text: (altText || '').trim() || file.name,
+      alt_text: (altText || '').trim() || String(file.name || '').replace(/\.[^.]+$/, ''),
       sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
+      work_types: Array.isArray(workTypes) ? workTypes : [],
+      project_id: projectId || null,
     }
     const { data, error } = await db.from('site_images').insert(row).select('*').single()
     if (error) {
@@ -260,7 +339,7 @@
   async function replaceSiteImage(row, file, userId, { altText, slot, category } = {}) {
     if (!db) throw new Error('Supabase nie je nakonfigurovaný.')
     if (!row?.id) throw new Error('Chýba id fotografie.')
-    const newPath = await uploadImageFile(file, userId)
+    const newPath = await uploadImageFile(file, userId, { resize: (category || row.category) !== 'brand' })
     const patch = { storage_path: newPath }
     if (altText != null && String(altText).trim()) patch.alt_text = String(altText).trim()
     if (slot !== undefined) patch.slot = slot || null
@@ -278,9 +357,11 @@
     return newPath
   }
 
-  async function updateSiteImageMeta(id, { altText, slot, sortOrder, category } = {}) {
+  async function updateSiteImageMeta(id, { altText, slot, sortOrder, category, workTypes, projectId } = {}) {
     if (!db) throw new Error('Supabase nie je nakonfigurovaný.')
     const patch = {}
+    if (Array.isArray(workTypes)) patch.work_types = workTypes
+    if (projectId !== undefined) patch.project_id = projectId || null
     if (altText != null) patch.alt_text = String(altText).trim()
     if (slot !== undefined) patch.slot = slot || null
     if (sortOrder != null && Number.isFinite(Number(sortOrder))) patch.sort_order = Number(sortOrder)
@@ -345,12 +426,14 @@
       )
     }
     const row = normalizeLeadPayload(data)
-    const { data: inserted, error } = await db.from('leads').insert(row).select('id').single()
+    // No .select(): visitors may INSERT but never read leads back (RLS), and asking for the
+    // inserted row would make PostgREST fail with "permission denied".
+    const { error } = await db.from('leads').insert(row)
     if (error) {
       error.message = `Uloženie dopytu: ${formatError(error)}`
       throw error
     }
-    return inserted
+    return { ok: true }
   }
 
   async function fetchLeads({ status } = {}) {
@@ -437,12 +520,13 @@
       )
     }
     const row = normalizeReviewPayload(data)
-    const { data: inserted, error } = await db.from('reviews').insert(row).select('id').single()
+    // No .select(): a pending review is invisible to visitors (RLS), so reading it back fails.
+    const { error } = await db.from('reviews').insert(row)
     if (error) {
       error.message = `Uloženie recenzie: ${formatError(error)}`
       throw error
     }
-    return inserted
+    return { ok: true }
   }
 
   async function acceptReview(id) {
@@ -457,6 +541,14 @@
     if (!id) throw new Error('Chýba id recenzie.')
     const { error } = await db.from('reviews').delete().eq('id', id)
     if (error) throw error
+  }
+
+  /** True only for the account listed in public.admin_users (checked server-side by RLS as well). */
+  async function isAdmin() {
+    if (!db) return false
+    const { data, error } = await db.rpc('is_admin')
+    if (error) return false
+    return data === true
   }
 
   function starsHtml(rating) {
@@ -495,6 +587,8 @@
 
   global.UkstavMedia = {
     db,
+    isAdmin,
+    prepareImage,
     configured,
     SITE_BUCKET,
     MAX_BYTES,

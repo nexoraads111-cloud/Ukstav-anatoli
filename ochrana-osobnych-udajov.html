@@ -85,20 +85,18 @@
                     </li>
                 </ul>
                 <p>
-                    Prehliadač uloží dopyt priamo do databázy <strong>Supabase</strong>
+                    Po odoslaní formulára prehliadač uloží dopyt do databázy <strong>Supabase</strong>
                     (Postgres v EÚ regióne podľa nastavenia projektu) cez oficiálne klientské API
                     s anonymným kľúčom a pravidlami Row Level Security: verejnosť môže iba
-                    <em>vytvoriť</em> nový záznam, čítať/mazať dopyty môže iba prihlásený správca
-                    na stránke <code>admin.html</code>.
-                    Starý skript <code>send-telegram.php</code> na GitHub Pages <strong>nefunguje</strong>
-                    (PHP sa nespúšťa; endpoint je vyradený a bez tajomstiev v kóde).
-                    Voliteľné notifikácie Telegram je možné doplniť cez Supabase Edge Function
-                    so serverovými secrets — nie sú predvolene zapnuté.
-                    Alternatívne kontakty: telefón, e-mail a WhatsApp (<code>wa.me</code>) na stránke.
+                    <em>vytvoriť</em> nový záznam, čítať, upravovať alebo mazať dopyty môže iba
+                    prihlásený správca (účet uvedený v zozname správcov).
                 </p>
                 <p>
-                    Ak ešte nie je doplnená konfigurácia Supabase v <code>js/supabase-config.js</code>,
-                    formulár dopyt neuloží a zobrazí chybu; dovtedy použite telefón / e-mail / WhatsApp.
+                    Zároveň sa otvorí <strong>WhatsApp</strong> s pripravenou správou pre naše číslo
+                    (meno, telefón a popis z formulára). Správa sa odošle <strong>až keď ju v aplikácii
+                    WhatsApp sami potvrdíte</strong> tlačidlom Odoslať; ak ju neodošlete, do WhatsApp sa nič
+                    neprenesie. Automatické notifikácie Telegram sú voliteľné a predvolene vypnuté.
+                    Alternatívne kontakty: telefón a e-mail na stránke.
                 </p>
 
                 <h3>2.2 Meta Instant Form</h3>
@@ -174,14 +172,13 @@
                         ak nám napíšete e-mail,
                     </li>
                     <li>
-                        <strong>WhatsApp</strong> — ak použijete odkaz <code>wa.me</code> na stránke
-                        (priame chatové spojenie; nie automatický export z webového formulára).
+                        <strong>WhatsApp</strong> (Meta) — keď po odoslaní formulára alebo cez odkaz
+                        <code>wa.me</code> sami odošlete pripravenú správu (nejde o automatický export z webu).
                     </li>
                 </ul>
                 <p>
                     Automatické notifikácie Telegram / WhatsApp Business Cloud API z formulára
-                    <strong>nie sú</strong> aktívne na GitHub Pages (starý PHP endpoint je vyradený).
-                    Meta Instant Form nie je aktívny.
+                    <strong>nie sú</strong> aktívne. Meta Instant Form nie je aktívny.
                     Ďalší príjemcovia (napr. účtovník, právnik, CRM, agentúra) nad rámec vyššie
                     uvedených služieb a kontaktov <strong>nie sú</strong>.
                 </p>

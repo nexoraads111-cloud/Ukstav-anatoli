@@ -1,6 +1,6 @@
 /**
  * Apply managed site images from Supabase onto public pages.
- * Covers brand/logos, hero, services, gallery, team, and every project photo.
+ * Covers brand/logos, hero, services, team, photos added to the gallery and every replaced project photo.
  * Falls back to static HTML / projects.js when config missing or fetch fails.
  */
 ;(async function () {
@@ -68,21 +68,11 @@
       applyImg(document.querySelector(`[data-image-slot="${slot}"]`), bySlot(rows, slot))
     })
 
-    const galleryRows = rows.filter((r) => r.category === 'gallery')
-    const galleryRoot = document.getElementById('siteGallery')
-    if (galleryRoot && galleryRows.length) {
-      galleryRoot.replaceChildren()
-      for (const row of galleryRows) {
-        const fig = document.createElement('figure')
-        fig.className = 'gallery-item'
-        const img = document.createElement('img')
-        img.src = row.url
-        img.alt = row.alt || 'Galéria UKSTAV'
-        img.loading = 'lazy'
-        fig.appendChild(img)
-        galleryRoot.appendChild(fig)
-      }
-    }
+    // Photos uploaded in the admin go into the unified "Realizácie" gallery.
+    // (Old seed rows that merely point at images/… are the same photos as the static projects.)
+    window.UKSTAV_GALLERY_ROWS = rows.filter(
+      (r) => r.category === 'gallery' && r.url && !r.isLocalSeed,
+    )
 
     // Merge every project photo override into PROJECTS
     const workCovers = {}
@@ -119,8 +109,10 @@
     }
     window.UKSTAV_WORK_COVERS = workCovers
 
-    if (window.app && typeof window.app.loadInitialProjects === 'function') {
-      window.app.loadInitialProjects()
+    // Redraw the gallery with uploaded photos + replaced project photos
+    // (if the page script has not started yet it reads the same globals on init)
+    if (window.app && typeof window.app.renderWorks === 'function') {
+      window.app.renderWorks()
     }
 
     // If on project detail page, reload current project with merged images

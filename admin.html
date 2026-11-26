@@ -3,7 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="robots" content="noindex,nofollow" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <meta name="referrer" content="no-referrer" />
+    <!-- Limits what this page may load/run (script injection hardening). -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self'"
+    />
     <title>Admin | UKSTAV</title>
     <link rel="icon" type="image/png" href="images/ukstav_logo_2.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -12,7 +18,7 @@
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./css/admin.css?v=4" />
+    <link rel="stylesheet" href="./css/admin.css?v=5" />
   </head>
   <body>
     <div class="admin-shell">
@@ -36,29 +42,23 @@
       <main class="panel">
         <h1>Správa webu</h1>
         <p class="lead">
-          Fotografie, dopyty a <strong>recenzie klientov</strong> (Prijať / Zmazať).
-          Návod: <code>SUPABASE.md</code> — kľúče len v <code>js/supabase-config.js</code>,
-          SQL pre recenzie v <code>supabase/reviews.sql</code>.
+          Fotografie (realizácie a galéria), dopyty zo servera a <strong>recenzie klientov</strong>
+          (Prijať / Zmazať). Do správy sa dostane len schválený účet správcu.
         </p>
 
         <div id="admin-msg" class="msg" role="status" aria-live="polite"></div>
 
         <div id="config-missing" class="hidden">
           <p class="lead">
-            Chýba konfigurácia. Vytvorte <strong>nový</strong> Supabase projekt od nuly
-            (návod <code>SUPABASE.md</code>), vložte URL + anon kľúč len do
-            <code>js/supabase-config.js</code>, spustite <code>supabase/setup.sql</code>
-            a pridajte admin užívateľa. Ukážka UI: <a href="admin.html?demo=1">admin.html?demo=1</a>.
+            Chýba konfigurácia. Doplňte URL a anon kľúč Supabase do
+            <code>js/supabase-config.js</code> (návod <code>SUPABASE.md</code>).
+            Ukážka rozhrania: <a href="admin.html?demo=1">admin.html?demo=1</a>.
           </p>
         </div>
 
         <section id="login-view">
           <form id="login-form" class="form">
             <h2>Prihlásenie správcu</h2>
-            <p class="hint">
-              Účet v Supabase Authentication (e-mail + heslo). Verejná registrácia vypnutá —
-              účet založíte v Dashboard → Users.
-            </p>
             <label>
               E-mail
               <input id="email" name="email" type="email" autocomplete="username" required />
@@ -88,42 +88,55 @@
 
           <div id="panel-photos">
             <div id="category-tabs" class="source-tabs" role="tablist" aria-label="Sekcia webu">
-              <button type="button" class="source-tabs__btn is-active" data-category="brand" role="tab" aria-selected="true">Logo</button>
+              <button type="button" class="source-tabs__btn is-active" data-category="gallery" role="tab" aria-selected="true">Realizácie a galéria</button>
+              <button type="button" class="source-tabs__btn" data-category="works" role="tab" aria-selected="false">Nahradiť foto projektu</button>
               <button type="button" class="source-tabs__btn" data-category="hero" role="tab" aria-selected="false">Hero</button>
               <button type="button" class="source-tabs__btn" data-category="services" role="tab" aria-selected="false">Služby</button>
-              <button type="button" class="source-tabs__btn" data-category="gallery" role="tab" aria-selected="false">Galéria</button>
               <button type="button" class="source-tabs__btn" data-category="team" role="tab" aria-selected="false">Tím</button>
-              <button type="button" class="source-tabs__btn" data-category="works" role="tab" aria-selected="false">Realizácie</button>
+              <button type="button" class="source-tabs__btn" data-category="brand" role="tab" aria-selected="false">Logo</button>
             </div>
 
             <div id="works-project-wrap" class="hidden" style="margin-bottom: 1rem">
               <label class="lead-edit" style="max-width: 28rem">
-                Projekt (všetky fotky v detaile)
+                Projekt
                 <select id="works-project"></select>
               </label>
-              <p class="hint">Každá fotka z <code>projects.js</code> sa dá nahradiť — thumbnail, detailná galéria aj miniatury.</p>
+              <p class="hint">Tu nahradíte jednu z existujúcich fotiek projektu. Nové fotky pridávate v záložke „Realizácie a galéria“.</p>
             </div>
 
             <form id="upload-form" class="form form--wide">
-              <h2>Pridať / nahradiť fotografiu</h2>
+              <h2 id="upload-title">Pridať fotografie</h2>
               <div id="slot-wrap">
                 <label>
                   Miesto na stránke
                   <select id="photo-slot" name="slot"></select>
                 </label>
               </div>
+
+              <div id="gallery-fields" class="hidden">
+                <fieldset class="chips">
+                  <legend>Typ prác — podľa toho sa fotka objaví vo filtroch na webe</legend>
+                  <div id="work-type-checks" class="chips__list"></div>
+                </fieldset>
+                <label>
+                  Projekt (nepovinné — fotka sa prepojí s detailom projektu)
+                  <select id="photo-project">
+                    <option value="">— bez projektu —</option>
+                  </select>
+                </label>
+              </div>
+
               <label>
-                Súbor (JPEG / PNG / WebP, max 5&nbsp;MB)
-                <input id="photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple required />
+                Fotografie (môžete vybrať viac naraz)
+                <input id="photos" name="photos" type="file" accept="image/*" multiple required />
               </label>
               <label>
-                Popis (alt)
-                <input id="photo-alt" name="alt" type="text" maxlength="160" placeholder="napr. Fasáda rodinného domu" />
+                Popis
+                <input id="photo-alt" name="alt" type="text" maxlength="160" placeholder="napr. Kúpeľňa — obklady 60×120" />
               </label>
               <button type="submit" class="btn btn-primary">Nahrať</button>
-              <p class="hint">
-                Pri Hero / Služby / Tím nahranie do rovnakého miesta <strong>nahradí</strong> existujúcu fotku.
-                Galéria a realizácie umožňujú viac fotiek a zmenu poradia šípkami ↑↓.
+              <p class="hint" id="upload-hint">
+                Veľké fotky z telefónu sa pred nahraním automaticky zmenšia. Nové fotky sa zobrazia na začiatku galérie.
               </p>
             </form>
 
@@ -131,13 +144,13 @@
               <h2>Fotky v sekcii <span id="photos-count" class="list-count"></span></h2>
               <button type="button" class="btn btn-outline" id="refresh-photos">Obnoviť</button>
             </div>
-            <p id="photos-empty" class="empty hidden">V tejto sekcii zatiaľ nie sú fotky v databáze.</p>
+            <p id="photos-empty" class="empty hidden">V tejto sekcii zatiaľ nie sú nahraté fotky.</p>
             <div id="photos-list" class="photos"></div>
           </div>
 
           <div id="panel-leads" class="hidden">
             <p class="hint" style="margin-bottom: 1rem">
-              Sekundárne: dopyty z kontaktného formulára (ak je Supabase napojený).
+              Dopyty z kontaktného formulára sa ukladajú sem a zároveň sa otvoria vo WhatsApp zákazníka.
             </p>
             <div class="list-head">
               <h2>Dopyty <span id="leads-count" class="list-count"></span></h2>
@@ -158,9 +171,8 @@
 
           <div id="panel-reviews" class="hidden">
             <p class="hint" style="margin-bottom: 1rem">
-              Recenzie z homepage. Na verejnom webe sa zobrazia len po <strong>Prijať</strong>.
+              Recenzie z hlavnej stránky. Na verejnom webe sa zobrazia len po <strong>Prijať</strong>.
               Čakajúce môžete <strong>Prijať</strong> alebo <strong>Zmazať</strong>.
-              Pred prvým použitím spustite SQL z <code>supabase/reviews.sql</code> (pozri <code>SUPABASE.md</code>).
             </p>
             <div class="list-head">
               <h2>Recenzie <span id="reviews-count" class="list-count"></span></h2>
@@ -180,18 +192,10 @@
       </main>
     </div>
 
-    <script src="./projects.js"></script>
-    <script src="./js/supabase-config.js?v=4"></script>
+    <script src="./projects.js?v=5"></script>
+    <script src="./js/supabase-config.js?v=5"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="./js/supabase-client.js?v=4"></script>
-    <script src="./js/admin.js?v=4"></script>
-    <script>
-      const logoutBtn = document.getElementById('logout')
-      const appView = document.getElementById('app-view')
-      const mo = new MutationObserver(() => {
-        logoutBtn.classList.toggle('hidden', appView.classList.contains('hidden'))
-      })
-      mo.observe(appView, { attributes: true, attributeFilter: ['class'] })
-    </script>
+    <script src="./js/supabase-client.js?v=5"></script>
+    <script src="./js/admin.js?v=5"></script>
   </body>
 </html>
