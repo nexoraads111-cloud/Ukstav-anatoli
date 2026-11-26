@@ -1,6 +1,8 @@
 /**
  * Apply managed site images from Supabase onto public pages.
- * Covers brand/logos, hero, services, team, photos added to the gallery and every replaced project photo.
+ * Covers brand/logos, hero (dark + light), services, team and the gallery (Realizácie).
+ * The gallery photo list lives in Supabase (site_images, category "gallery") and is edited in the admin;
+ * project pages show the gallery photos linked to that project.
  * Falls back to static HTML / projects.js when config missing or fetch fails.
  */
 ;(async function () {
@@ -48,9 +50,7 @@
     applyLogoSlot('logo-footer', bySlot(rows, 'logo-footer'))
 
     applyImg(document.querySelector('[data-image-slot="hero"]'), bySlot(rows, 'hero'))
-    const heroAlt = bySlot(rows, 'hero-alt')
-    const heroAltEl = document.querySelector('[data-image-slot="hero-alt"]')
-    if (heroAltEl && heroAlt) applyImg(heroAltEl, heroAlt)
+    applyImg(document.querySelector('[data-image-slot="hero-light"]'), bySlot(rows, 'hero-light'))
 
     ;['service-house', 'service-reconstruction', 'service-facade'].forEach((slot) => {
       const row = bySlot(rows, slot)
@@ -68,61 +68,28 @@
       applyImg(document.querySelector(`[data-image-slot="${slot}"]`), bySlot(rows, slot))
     })
 
-    // Photos uploaded in the admin go into the unified "Realizácie" gallery.
-    // (Old seed rows that merely point at images/… are the same photos as the static projects.)
-    window.UKSTAV_GALLERY_ROWS = rows.filter(
-      (r) => r.category === 'gallery' && r.url && !r.isLocalSeed,
-    )
+    // The gallery is managed in the admin: every photo (also the former static ones) is a row.
+    // Hidden photos are not shown on the site.
+    const gallery = rows.filter((r) => r.category === 'gallery' && r.url && r.isVisible)
+    window.UKSTAV_GALLERY_ROWS = gallery
 
-    // Merge every project photo override into PROJECTS
-    const workCovers = {}
+    // Project pages show the gallery photos linked to that project (same order as in the admin).
     if (typeof PROJECTS !== 'undefined') {
-      rows
-        .filter((r) => r.category === 'works' && r.slot && r.url)
-        .forEach((r) => {
-          const m = String(r.slot).match(/^(project\d+)\/(thumbnail|images|gallery)(?:\/(\d+))?$/)
-          if (!m) {
-            // legacy cover slot "project1"
-            if (PROJECTS[r.slot]) {
-              workCovers[r.slot] = r
-              PROJECTS[r.slot].thumbnail = r.url
-            }
-            return
-          }
-          const [, projectId, kind, indexStr] = m
-          const project = PROJECTS[projectId]
-          if (!project) return
-          if (kind === 'thumbnail') {
-            project.thumbnail = r.url
-            workCovers[projectId] = r
-          } else if (kind === 'images') {
-            const i = Number(indexStr)
-            if (!Array.isArray(project.images)) project.images = []
-            project.images[i] = r.url
-            if (i === 0) workCovers[projectId] = workCovers[projectId] || r
-          } else if (kind === 'gallery') {
-            const i = Number(indexStr)
-            if (!Array.isArray(project.gallery)) project.gallery = []
-            project.gallery[i] = r.url
-          }
-        })
-    }
-    window.UKSTAV_WORK_COVERS = workCovers
-
-    // Redraw the gallery with uploaded photos + replaced project photos
-    // (if the page script has not started yet it reads the same globals on init)
-    if (window.app && typeof window.app.renderWorks === 'function') {
-      window.app.renderWorks()
-    }
-
-    // If on project detail page, reload current project with merged images
-    if (window.location.pathname.includes('project.html') && window.app?.loadProject) {
-      const id = new URLSearchParams(window.location.search).get('id')
-      if (id && typeof PROJECTS !== 'undefined' && PROJECTS[id]) {
-        window.app.loadProject(PROJECTS[id])
-      }
+      Object.keys(PROJECTS).forEach((pid) => {
+        PROJECTS[pid].images = gallery.filter((r) => r.projectId === pid).map((r) => r.url)
+      })
     }
   } catch (err) {
     console.warn('UKSTAV site images:', media.formatError?.(err) || err)
+  } finally {
+    // Tell the page the photo list is final (managed list, or the static fallback when null).
+    window.UKSTAV_GALLERY_SETTLED = true
+    if (window.app && typeof window.app.renderWorks === 'function') window.app.renderWorks()
+    if (window.location.pathname.includes('project.html') && window.app?.loadProject) {
+      const id = new URLSearchParams(window.location.search).get('id')
+      if (id && typeof PROJECTS !== 'undefined' && Object.prototype.hasOwnProperty.call(PROJECTS, id)) {
+        window.app.loadProject(PROJECTS[id])
+      }
+    }
   }
 })()

@@ -172,6 +172,7 @@ create table if not exists public.site_images (
   sort_order int not null default 0,
   work_types text[] not null default '{}',
   project_id text,
+  is_visible boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -185,6 +186,7 @@ alter table public.site_images add column if not exists updated_at timestamptz n
 -- Gallery filters: which work types a photo belongs to + optional link to a project detail page
 alter table public.site_images add column if not exists work_types text[] not null default '{}';
 alter table public.site_images add column if not exists project_id text;
+alter table public.site_images add column if not exists is_visible boolean not null default true;
 
 alter table public.site_images drop constraint if exists site_images_category_check;
 alter table public.site_images
@@ -308,8 +310,8 @@ create policy "Admin delete site-images"
 
 -- ---------------------------------------------------------------------------
 -- Fixed homepage slots (logo / hero / services / team). Never overwrites a photo
--- you already replaced in the admin. Gallery photos are NOT seeded any more:
--- the homepage gallery is built from the static projects (projects.js) + uploads.
+-- you already replaced in the admin. The gallery photos themselves are seeded
+-- by supabase/seed-gallery.sql (run it once after this script).
 -- ---------------------------------------------------------------------------
 insert into public.site_images (id, category, slot, storage_path, alt_text, sort_order)
 values
@@ -317,7 +319,7 @@ values
   ('b1000000-0000-4000-8000-000000000002', 'brand', 'logo-nav', 'images/ukstav_logo_2.png', 'Logo navigácia', 2),
   ('b1000000-0000-4000-8000-000000000003', 'brand', 'logo-footer', 'images/ukstav_logo_2.png', 'Logo pätička', 3),
   ('b1000000-0000-4000-8000-000000000004', 'hero', 'hero', 'images/hero-house.jpg', 'Hero — dom UKSTAV', 1),
-  ('b1000000-0000-4000-8000-000000000005', 'hero', 'hero-alt', 'images/hero-bg.jpg', 'Hero — alternatívne pozadie', 2),
+  ('b1000000-0000-4000-8000-000000000005', 'hero', 'hero-light', 'images/hero-light.jpg', 'Hero — svetlá téma', 2),
   ('b1000000-0000-4000-8000-000000000010', 'services', 'service-house', 'images/service-house.jpg', 'Služba — domy na kľúč', 1),
   ('b1000000-0000-4000-8000-000000000011', 'services', 'service-reconstruction', 'images/service-reconstruction.jpg', 'Služba — rekonštrukcie', 2),
   ('b1000000-0000-4000-8000-000000000012', 'services', 'service-facade', 'images/service-facade.jpg', 'Služba — fasády a interiéry', 3),

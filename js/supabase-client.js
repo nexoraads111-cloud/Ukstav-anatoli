@@ -48,8 +48,8 @@
       { slot: 'logo-footer', label: 'Logo v pätičke' },
     ],
     hero: [
-      { slot: 'hero', label: 'Hlavný banner (hero)' },
-      { slot: 'hero-alt', label: 'Alternatívny hero / pozadie' },
+      { slot: 'hero', label: 'Hlavný banner — tmavá téma' },
+      { slot: 'hero-light', label: 'Hlavný banner — svetlá téma' },
     ],
     services: [
       { slot: 'service-house', label: 'Karta — Domy na kľúč' },
@@ -178,6 +178,7 @@
       sortOrder: row.sort_order ?? 0,
       workTypes: Array.isArray(row.work_types) ? row.work_types : [],
       projectId: row.project_id || null,
+      isVisible: row.is_visible !== false,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       url: publicUrl(row.storage_path),
@@ -357,11 +358,12 @@
     return newPath
   }
 
-  async function updateSiteImageMeta(id, { altText, slot, sortOrder, category, workTypes, projectId } = {}) {
+  async function updateSiteImageMeta(id, { altText, slot, sortOrder, category, workTypes, projectId, isVisible } = {}) {
     if (!db) throw new Error('Supabase nie je nakonfigurovaný.')
     const patch = {}
     if (Array.isArray(workTypes)) patch.work_types = workTypes
     if (projectId !== undefined) patch.project_id = projectId || null
+    if (typeof isVisible === 'boolean') patch.is_visible = isVisible
     if (altText != null) patch.alt_text = String(altText).trim()
     if (slot !== undefined) patch.slot = slot || null
     if (sortOrder != null && Number.isFinite(Number(sortOrder))) patch.sort_order = Number(sortOrder)
