@@ -1,72 +1,94 @@
 /**
- * Optional Supabase Edge Function: Telegram notify on new lead.
- * Secrets stay server-side (Dashboard → Edge Functions → Secrets):
- *   TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+ * Edge Function: deliver a new lead (public.leads row) to WhatsApp (and optionally Telegram).
  *
- * Deploy after `supabase functions deploy notify-lead`.
- * Wire via Database Webhook on public.leads INSERT, or call from a DB trigger.
+ * Called by the database trigger `leads_notify` (pg_net) right after INSERT with { "lead_id": "<uuid>" }.
+ * Deployed with verify_jwt = false because the caller is the database, not a signed-in user. It is safe:
+ *   - the body only carries a lead id; the lead is read with the service-role key (never leaves the server);
+ *   - a lead is "claimed" atomically (notified_at) so repeated/forged calls cannot send it twice;
+ *   - at most MAX_PER_HOUR notifications per hour (the public form has its own limits too);
+ *   - provider tokens live only in Edge Function secrets, never in the repo or the browser.
  *
- * This function is NOT required for the form/admin to work — leads are stored
- * in Postgres either way.
+ * Secrets: see senders.ts. Setup steps: SUPABASE.md → "Заявки на WhatsApp автоматично".
+ * Leads are always saved in Postgres, whatever happens here.
  */
-import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { sendTelegram, sendWhatsApp, type Lead, type SendResult } from './senders.ts'
 
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+const MAX_PER_HOUR = 20
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: cors })
-  }
+const reply = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: JSON_HEADERS })
 
+Deno.serve(async (req) => {
+  if (req.method !== 'POST') return reply({ ok: false, error: 'method_not_allowed' }, 405)
+
+  let payload: { lead_id?: unknown; record?: { id?: unknown } }
   try {
-    const payload = await req.json()
-    const record = payload.record || payload
-    const name = String(record.name || '').trim()
-    const phone = String(record.phone || '').trim()
-    const description = String(record.description || '').trim()
-    const callback = String(record.callback_time || '').trim()
-    const source = String(record.source || 'contact').trim()
-
-    const token = Deno.env.get('TELEGRAM_BOT_TOKEN')
-    const chatId = Deno.env.get('TELEGRAM_CHAT_ID')
-    if (!token || !chatId) {
-      return new Response(JSON.stringify({ ok: false, reason: 'telegram_not_configured' }), {
-        headers: { ...cors, 'Content-Type': 'application/json' },
-      })
-    }
-
-    let text = `🔔 <b>Nový dopyt z ukstav.sk</b>\n\n`
-    text += `👤 <b>Meno:</b> ${escapeHtml(name)}\n`
-    text += `📞 <b>Telefón:</b> <code>${escapeHtml(phone)}</code>\n`
-    text += `🏷 <b>Zdroj:</b> ${escapeHtml(source)}\n`
-    if (description) text += `📝 <b>Popis:</b>\n${escapeHtml(description)}\n`
-    if (callback) text += `⏰ <b>Čas volania:</b> ${escapeHtml(callback)}\n`
-    text += `\n🕐 ${new Date().toLocaleString('sk-SK')}`
-
-    const tg = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
-    })
-    const body = await tg.json()
-
-    return new Response(JSON.stringify({ ok: Boolean(body.ok), telegram: body }), {
-      headers: { ...cors, 'Content-Type': 'application/json' },
-    })
-  } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: String(err) }), {
-      status: 500,
-      headers: { ...cors, 'Content-Type': 'application/json' },
-    })
+    payload = await req.json()
+  } catch {
+    return reply({ ok: false, error: 'bad_json' }, 400)
   }
-})
+  const id = String(payload?.lead_id ?? payload?.record?.id ?? '')
+  if (!UUID.test(id)) return reply({ ok: false, error: 'bad_id' }, 400)
 
-function escapeHtml(s: string) {
-  return s
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-}
+  const url = Deno.env.get('SUPABASE_URL')
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!url || !key) return reply({ ok: false, error: 'server_not_configured' }, 500)
+  const db = createClient(url, key, { auth: { persistSession: false } })
+
+  // Flood brake for notifications.
+  const since = new Date(Date.now() - 3600_000).toISOString()
+  const { count } = await db
+    .from('leads')
+    .select('id', { count: 'exact', head: true })
+    .gte('notified_at', since)
+  if ((count ?? 0) >= MAX_PER_HOUR) {
+    await db.from('leads').update({ notify_error: 'rate_limited' }).eq('id', id).is('notified_at', null)
+    return reply({ ok: false, skipped: 'rate_limited' })
+  }
+
+  // Claim the lead (only one caller wins).
+  const { data: lead, error: claimErr } = await db
+    .from('leads')
+    .update({ notified_at: new Date().toISOString(), notify_error: null })
+    .eq('id', id)
+    .is('notified_at', null)
+    .select('id, name, phone, description, callback_time, source')
+    .maybeSingle()
+  if (claimErr) return reply({ ok: false, error: 'db_error' }, 500)
+  if (!lead) return reply({ ok: true, skipped: 'already_sent_or_missing' })
+
+  const env = Deno.env.toObject()
+  const settled = await Promise.allSettled([sendWhatsApp(env, lead as Lead), sendTelegram(env, lead as Lead)])
+
+  const sent: string[] = []
+  const errors: string[] = []
+  let configured = 0
+  for (const r of settled) {
+    if (r.status === 'rejected') {
+      configured++
+      errors.push(String(r.reason?.message || r.reason).slice(0, 300))
+    } else {
+      const v = r.value as SendResult
+      if (v.configured) {
+        configured++
+        sent.push(v.channel)
+      }
+    }
+  }
+
+  if (sent.length) {
+    await db
+      .from('leads')
+      .update({ notify_channel: sent.join(','), notify_error: errors.length ? errors.join(' | ') : null })
+      .eq('id', id)
+    return reply({ ok: true, sent })
+  }
+
+  // Nothing delivered: release the claim so the problem is visible in the admin and can be retried.
+  const reason = configured ? errors.join(' | ') : 'not_configured'
+  await db.from('leads').update({ notified_at: null, notify_error: reason }).eq('id', id)
+  return reply({ ok: false, error: reason }, configured ? 502 : 200)
+})
