@@ -21,8 +21,13 @@
   const uploadForm = $('#upload-form')
   const slotSelect = $('#photo-slot')
   const slotWrap = $('#slot-wrap')
-  const worksProjectWrap = $('#works-project-wrap')
-  const worksProjectSelect = $('#works-project')
+  const galleryIntro = $('#gallery-intro')
+  const galleryToolbar = $('#gallery-toolbar')
+  const galleryChips = $('#gallery-filter-chips')
+  const galleryFilterProject = $('#gallery-filter-project')
+  const galleryFilterVisibility = $('#gallery-filter-visibility')
+  const galleryFilterQ = $('#gallery-filter-q')
+  const photosMore = $('#photos-more')
   const leadsList = $('#leads-list')
   const leadsEmpty = $('#leads-empty')
   const leadsCount = $('#leads-count')
@@ -40,7 +45,8 @@
   const logoutBtn = $('#logout')
 
   let activeCategory = 'gallery'
-  let activeProjectId = 'project1'
+  const GALLERY_PAGE = 24
+  const galleryView = { type: 'all', project: '', visibility: 'all', q: '', visible: GALLERY_PAGE }
   let cachedPhotos = []
   let dbRows = []
 
@@ -59,7 +65,7 @@
     ],
     hero: [
       { id: 'demo-hero', category: 'hero', slot: 'hero', url: 'images/hero-house.jpg', alt: 'Hero', isLocalSeed: true },
-      { id: 'demo-hero-alt', category: 'hero', slot: 'hero-alt', url: 'images/hero-bg.jpg', alt: 'Hero alt', isLocalSeed: true },
+      { id: 'demo-hero-light', category: 'hero', slot: 'hero-light', url: 'images/hero-light.jpg', alt: 'Hero (svetlá téma)', isLocalSeed: true },
     ],
     services: [
       { id: 'demo-sh', category: 'services', slot: 'service-house', url: 'images/service-house.jpg', alt: 'Domy na kľúč', isLocalSeed: true },
@@ -146,26 +152,20 @@
   cfgMissing?.classList.add('hidden')
   const db = media.db
 
-  function fillWorksProjectSelect() {
-    if (!worksProjectSelect) return
-    const ids = media.listProjectIds ? media.listProjectIds() : Object.keys(window.PROJECTS || {})
-    worksProjectSelect.innerHTML = ids
-      .map((id) => {
-        const title = (window.PROJECTS && PROJECTS[id]?.title) || id
-        return `<option value="${escapeAttr(id)}">${escapeHtml(title)}</option>`
-      })
-      .join('')
-    if (!ids.includes(activeProjectId) && ids[0]) activeProjectId = ids[0]
-    worksProjectSelect.value = activeProjectId
-  }
-
   function refreshSlotSelect() {
-    const isWorks = activeCategory === 'works'
     const isGallery = activeCategory === 'gallery'
-    worksProjectWrap?.classList.toggle('hidden', !isWorks)
     galleryFields?.classList.toggle('hidden', !isGallery)
-    if (isWorks) fillWorksProjectSelect()
+    galleryIntro?.classList.toggle('hidden', !isGallery)
+    galleryToolbar?.classList.toggle('hidden', !isGallery)
     if (isGallery) {
+      renderGalleryChips()
+      if (galleryFilterProject && galleryFilterProject.options.length <= 1) {
+        galleryFilterProject.innerHTML =
+          '<option value="">— všetky projekty —</option><option value="__none">— bez projektu —</option>' +
+          Object.keys(window.PROJECTS || {})
+            .map((id) => `<option value="${escapeAttr(id)}">${escapeHtml(PROJECTS[id].title)}</option>`)
+            .join('')
+      }
       if (workTypeChecks && !workTypeChecks.children.length) {
         workTypeChecks.innerHTML = typeCheckboxes([], 'form')
       }
@@ -174,11 +174,11 @@
       }
     }
     if (uploadTitle) {
-      uploadTitle.textContent = isGallery ? 'Pridať fotografie do realizácií' : 'Pridať / nahradiť fotografiu'
+      uploadTitle.textContent = isGallery ? 'Pridať nové fotografie' : 'Pridať / nahradiť fotografiu'
     }
     if (uploadHint) {
       uploadHint.textContent = isGallery
-        ? 'Veľké fotky z telefónu sa pred nahraním automaticky zmenšia. Nové fotky sa zobrazia na začiatku galérie. Fotka bez typu sa ukáže len vo filtri „Všetko“.'
+        ? 'Veľké fotky z telefónu sa pred nahraním automaticky zmenšia. Nové fotky sa zobrazia na začiatku galérie a na stránke zvoleného projektu. Fotka bez typu sa ukáže len vo filtri „Všetko“.'
         : 'Nahranie do rovnakého miesta nahradí existujúcu fotku.'
     }
     if (photosInput) {
@@ -202,10 +202,6 @@
       uploadForm?.classList.remove('hidden')
       slotSelect.innerHTML = ''
       slotSelect.required = false
-    } else if (isWorks) {
-      // Replacing a project photo happens on each photo card
-      slotWrap?.classList.add('hidden')
-      uploadForm?.classList.add('hidden')
     } else {
       slotWrap?.classList.add('hidden')
       uploadForm?.classList.remove('hidden')
@@ -220,60 +216,152 @@
     return row.slot
   }
 
+  // ---------- Gallery manager (Realizácie a galéria) ----------
+  function galleryTypeLabel(key) {
+    const t = WORK_TYPE_LIST.find((x) => x.key === key)
+    return t ? t.label : key
+  }
+
+  function resetGalleryFilters() {
+    galleryView.type = 'all'
+    galleryView.project = ''
+    galleryView.visibility = 'all'
+    galleryView.q = ''
+    galleryView.visible = GALLERY_PAGE
+    if (galleryFilterProject) galleryFilterProject.value = ''
+    if (galleryFilterVisibility) galleryFilterVisibility.value = 'all'
+    if (galleryFilterQ) galleryFilterQ.value = ''
+  }
+
+  function renderGalleryChips() {
+    if (!galleryChips) return
+    const rows = activeCategory === 'gallery' ? cachedPhotos : []
+    const items = [
+      { key: 'all', label: 'Všetko', n: rows.length },
+      ...WORK_TYPE_LIST.map((t) => ({
+        key: t.key,
+        label: t.label,
+        n: rows.filter((r) => (r.workTypes || []).includes(t.key)).length,
+      })),
+      { key: 'none', label: 'Bez typu', n: rows.filter((r) => !(r.workTypes || []).length).length },
+    ]
+    galleryChips.innerHTML = items
+      .map(
+        (it) => `<button type="button" class="chip chip--btn${galleryView.type === it.key ? ' is-active' : ''}"
+          data-gtype="${escapeAttr(it.key)}" aria-pressed="${galleryView.type === it.key}">
+          ${escapeHtml(it.label)} <span class="chip__n">${it.n}</span></button>`,
+      )
+      .join('')
+  }
+
+  function filteredGallery() {
+    const q = galleryView.q.trim().toLowerCase()
+    return cachedPhotos.filter((r) => {
+      const types = r.workTypes || []
+      if (galleryView.type === 'none') {
+        if (types.length) return false
+      } else if (galleryView.type !== 'all' && !types.includes(galleryView.type)) {
+        return false
+      }
+      if (galleryView.project === '__none') {
+        if (r.projectId) return false
+      } else if (galleryView.project && r.projectId !== galleryView.project) {
+        return false
+      }
+      if (galleryView.visibility === 'visible' && !r.isVisible) return false
+      if (galleryView.visibility === 'hidden' && r.isVisible) return false
+      if (q) {
+        const proj = r.projectId && window.PROJECTS?.[r.projectId] ? PROJECTS[r.projectId].title : ''
+        if (!`${r.alt || ''} ${proj}`.toLowerCase().includes(q)) return false
+      }
+      return true
+    })
+  }
+
+  function galleryLabel(row) {
+    const proj = row.projectId && window.PROJECTS?.[row.projectId] ? PROJECTS[row.projectId].title : 'bez projektu'
+    return `${row.isLocalSeed ? 'pôvodná fotka' : 'nahraná fotka'} · ${proj}${row.isVisible ? '' : ' · SKRYTÁ'}`
+  }
+
   function renderPhotoCards(rows) {
     cachedPhotos = rows
+    const isGallery = activeCategory === 'gallery'
+    if (isGallery) renderGalleryChips()
+    const list = isGallery ? filteredGallery() : rows
+    const shown = isGallery ? list.slice(0, galleryView.visible) : list
     photosList.replaceChildren()
-    if (photosCount) photosCount.textContent = rows.length ? `${rows.length} fotiek` : ''
-    if (!rows.length) {
-      photosEmpty?.classList.remove('hidden')
+    if (photosCount) {
+      photosCount.textContent = !rows.length
+        ? ''
+        : isGallery && list.length !== rows.length
+          ? `${list.length} z ${rows.length} fotiek`
+          : `${rows.length} fotiek`
+    }
+    if (photosMore) {
+      const left = list.length - shown.length
+      photosMore.classList.toggle('hidden', left <= 0)
+      photosMore.textContent = `Zobraziť ďalšie (${left})`
+    }
+    if (!list.length) {
+      if (photosEmpty) {
+        photosEmpty.textContent =
+          isGallery && rows.length
+            ? 'Žiadna fotka nezodpovedá filtru.'
+            : 'V tejto sekcii zatiaľ nie sú nahraté fotky.'
+        photosEmpty.classList.remove('hidden')
+      }
       return
     }
     photosEmpty?.classList.add('hidden')
 
-    rows.forEach((row, index) => {
+    shown.forEach((row, index) => {
       const card = document.createElement('article')
-      card.className = 'photo-card'
+      card.className = 'photo-card' + (isGallery && !row.isVisible ? ' is-hidden' : '')
       card.dataset.id = row.id || row.slot || `row-${index}`
       if (row.slot) card.dataset.slot = row.slot
       const badge = row.isLocalSeed || row._virtual ? ' · lokálna / web' : ''
-      const canReorder = activeCategory === 'gallery' && !row._virtual
-      const galleryExtras =
-        activeCategory === 'gallery' && !row._virtual
-          ? `<fieldset class="chips chips--small">
-               <legend>Typ prác</legend>
-               <div class="chips__list" data-card-types>${typeCheckboxes(row.workTypes, 'card')}</div>
-             </fieldset>
+      const galleryExtras = isGallery
+        ? `<fieldset class="chips chips--small">
+             <legend>Typ prác</legend>
+             <div class="chips__list" data-card-types>${typeCheckboxes(row.workTypes, 'card')}</div>
+           </fieldset>
+           <div class="photo-card__row">
              <label class="lead-edit">
                Projekt
                <select class="photo-project" ${demoMode ? 'disabled' : ''}>${projectOptions(row.projectId || '')}</select>
-             </label>`
-          : ''
+             </label>
+             <label class="chip">
+               <input type="checkbox" class="photo-visible" ${row.isVisible ? 'checked' : ''} ${demoMode ? 'disabled' : ''} />
+               <span>Zobrazovať na webe</span>
+             </label>
+           </div>`
+        : ''
+      const moves = isGallery
+        ? `<button type="button" class="btn btn-outline" data-move="top" title="Presunúť na začiatok galérie" ${demoMode ? 'disabled' : ''}>⤒ Na začiatok</button>
+           <button type="button" class="btn btn-outline" data-move="up" title="Posunúť vyššie" ${index === 0 ? 'disabled' : ''}>↑</button>
+           <button type="button" class="btn btn-outline" data-move="down" title="Posunúť nižšie" ${index === list.length - 1 ? 'disabled' : ''}>↓</button>`
+        : ''
       card.innerHTML = `
         <div class="photo-card__media">
-          <img src="${escapeAttr(row.url)}" alt="${escapeAttr(row.alt || '')}" loading="lazy" />
+          <img src="${escapeAttr(isGallery && row.isLocalSeed && typeof workThumb === 'function' ? workThumb(row.storagePath || row.url) : row.url)}" alt="${escapeAttr(row.alt || '')}" loading="lazy" />
         </div>
         <div class="photo-card__body">
-          <p class="photo-card__slot">${escapeHtml(slotLabel(row))}${badge}</p>
+          <p class="photo-card__slot">${escapeHtml(isGallery ? galleryLabel(row) : slotLabel(row) + badge)}</p>
           <label class="lead-edit">
             Popis
             <input type="text" class="photo-alt" value="${escapeAttr(row.alt || '')}" maxlength="160" ${demoMode ? 'readonly' : ''} />
           </label>
           ${galleryExtras}
           <div class="photo-card__buttons">
-            ${
-              canReorder
-                ? `<button type="button" class="btn btn-outline" data-move="up" ${index === 0 ? 'disabled' : ''}>↑</button>
-                   <button type="button" class="btn btn-outline" data-move="down" ${index === rows.length - 1 ? 'disabled' : ''}>↓</button>`
-                : ''
-            }
+            ${moves}
             <label class="btn btn-outline photo-replace">
-              Nahradiť
-              <input type="file" accept="image/jpeg,image/png,image/webp" hidden data-replace ${demoMode ? 'disabled' : ''} />
+              Nahradiť fotku
+              <input type="file" accept="image/*" hidden data-replace ${demoMode ? 'disabled' : ''} />
             </label>
             ${
               row._virtual
                 ? ''
-                : `<button type="button" class="btn btn-outline" data-save ${demoMode ? 'disabled' : ''}>Uložiť</button>
+                : `<button type="button" class="btn btn-primary" data-save ${demoMode ? 'disabled' : ''}>Uložiť</button>
                    <button type="button" class="btn btn-danger" data-delete ${demoMode ? 'disabled' : ''}>Zmazať</button>`
             }
           </div>
@@ -283,51 +371,14 @@
     })
   }
 
-  function mergeWorksInventory(dbCategoryRows) {
-    const slots = media.worksSlotsForProject
-      ? media.worksSlotsForProject(activeProjectId)
-      : []
-    const bySlot = {}
-    dbCategoryRows.forEach((r) => {
-      if (r.slot) bySlot[r.slot] = r
-    })
-    return slots.map((s, index) => {
-      const existing = bySlot[s.slot]
-      if (existing) {
-        return { ...existing, _inventoryLabel: s.label }
-      }
-      return {
-        id: `virtual-${s.slot}`,
-        category: 'works',
-        slot: s.slot,
-        url: s.fallback,
-        alt: s.label,
-        isLocalSeed: true,
-        _virtual: true,
-        _inventoryLabel: s.label,
-        sortOrder: index + 1,
-      }
-    })
-  }
-
   async function refreshPhotos() {
     try {
       if (demoMode) {
-        if (activeCategory === 'works') {
-          renderPhotoCards(mergeWorksInventory([]))
-        } else {
-          renderPhotoCards(LOCAL_SEED[activeCategory] || [])
-        }
+        renderPhotoCards(LOCAL_SEED[activeCategory] || [])
         return
       }
       dbRows = await media.fetchSiteImages({ category: activeCategory })
-      // Old seed rows pointing at images/… are the static project photos — shown in the grid anyway.
-      if (activeCategory === 'gallery') dbRows = dbRows.filter((r) => !r.isLocalSeed)
-      if (activeCategory === 'works') {
-        renderPhotoCards(mergeWorksInventory(dbRows))
-      } else {
-        renderPhotoCards(dbRows)
-      }
+      renderPhotoCards(dbRows)
     } catch (err) {
       console.error(err)
       message(`Nepodarilo sa načítať fotky: ${media.formatError?.(err) || err.message}`, 'error')
@@ -545,13 +596,40 @@
       el.setAttribute('aria-selected', on ? 'true' : 'false')
     })
     clearMessage()
+    resetGalleryFilters()
     refreshSlotSelect()
     await refreshPhotos()
   })
 
-  worksProjectSelect?.addEventListener('change', async () => {
-    activeProjectId = worksProjectSelect.value
-    await refreshPhotos()
+  galleryChips?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-gtype]')
+    if (!btn) return
+    galleryView.type = btn.getAttribute('data-gtype')
+    galleryView.visible = GALLERY_PAGE
+    renderPhotoCards(cachedPhotos)
+  })
+  galleryFilterProject?.addEventListener('change', () => {
+    galleryView.project = galleryFilterProject.value
+    galleryView.visible = GALLERY_PAGE
+    renderPhotoCards(cachedPhotos)
+  })
+  galleryFilterVisibility?.addEventListener('change', () => {
+    galleryView.visibility = galleryFilterVisibility.value
+    galleryView.visible = GALLERY_PAGE
+    renderPhotoCards(cachedPhotos)
+  })
+  let qTimer
+  galleryFilterQ?.addEventListener('input', () => {
+    clearTimeout(qTimer)
+    qTimer = setTimeout(() => {
+      galleryView.q = galleryFilterQ.value
+      galleryView.visible = GALLERY_PAGE
+      renderPhotoCards(cachedPhotos)
+    }, 200)
+  })
+  photosMore?.addEventListener('click', () => {
+    galleryView.visible += GALLERY_PAGE
+    renderPhotoCards(cachedPhotos)
   })
 
   $$('[data-panel]').forEach((btn) => {
@@ -684,6 +762,7 @@
         }
       }
       uploadForm.reset()
+      resetGalleryFilters()
       refreshSlotSelect()
       await refreshPhotos()
     } catch (err) {
@@ -724,13 +803,29 @@
     const move = e.target.closest('[data-move]')
     if (move) {
       const dir = move.getAttribute('data-move')
-      const ids = cachedPhotos.filter((p) => !p._virtual).map((p) => p.id)
-      const idx = ids.indexOf(id)
-      const swapWith = dir === 'up' ? idx - 1 : idx + 1
-      if (swapWith < 0 || swapWith >= ids.length) return
-      ;[ids[idx], ids[swapWith]] = [ids[swapWith], ids[idx]]
       try {
-        await media.reorderSiteImages(ids)
+        if (dir === 'top') {
+          const min = Math.min(...cachedPhotos.map((p) => Number(p.sortOrder) || 0))
+          await media.updateSiteImageMeta(id, { sortOrder: min - 1 })
+        } else {
+          const list = filteredGallery()
+          const idx = list.findIndex((p) => p.id === id)
+          const other = list[dir === 'up' ? idx - 1 : idx + 1]
+          if (idx < 0 || !other) return
+          if (Number(row.sortOrder) === Number(other.sortOrder)) {
+            // identical positions: number the whole list once, then swap
+            const ids = cachedPhotos.map((p) => p.id)
+            const i1 = ids.indexOf(row.id)
+            const i2 = ids.indexOf(other.id)
+            ;[ids[i1], ids[i2]] = [ids[i2], ids[i1]]
+            await media.reorderSiteImages(ids)
+          } else {
+            await Promise.all([
+              media.updateSiteImageMeta(row.id, { sortOrder: other.sortOrder }),
+              media.updateSiteImageMeta(other.id, { sortOrder: row.sortOrder }),
+            ])
+          }
+        }
         message('Poradie uložené.', 'ok')
         await refreshPhotos()
       } catch (err) {
@@ -745,6 +840,8 @@
       if (card.querySelector('[data-card-types]')) {
         extra.workTypes = checkedTypes(card)
         extra.projectId = card.querySelector('.photo-project')?.value || null
+        const vis = card.querySelector('.photo-visible')
+        if (vis) extra.isVisible = vis.checked
       }
       try {
         await media.updateSiteImageMeta(id, { altText: alt, ...extra })
@@ -757,8 +854,11 @@
     }
 
     if (e.target.closest('[data-delete]')) {
-      if (!confirm('Naozaj zmazať túto fotografiu? (web spadne späť na lokálny súbor, ak existuje)'))
-        return
+      const delText =
+        activeCategory === 'gallery'
+          ? 'Naozaj odstrániť túto fotku z galérie? Zmizne z webu aj zo stránky projektu. (Ak ju len nechcete zobrazovať, radšej zrušte „Zobrazovať na webe“.)'
+          : 'Naozaj zmazať túto fotografiu? (web sa vráti k pôvodnej fotke, ak existuje)'
+      if (!confirm(delText)) return
       try {
         await media.deleteSiteImage(row)
         message('Fotografia zmazaná.', 'ok')

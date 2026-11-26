@@ -14,6 +14,7 @@ const CONFIG = {
     // WhatsApp number that receives requests (international format, digits only)
     WHATSAPP_NUMBER: '421950405659',
     // Max time we wait for Supabase before opening WhatsApp anyway
+    GALLERY_WAIT_MS: 3500,
     SAVE_TIMEOUT_MS: 6000,
 };
 
@@ -185,14 +186,31 @@ class StavMasterWebsite {
             });
         }
 
-        this.renderWorks();
+        if (this.galleryPending()) {
+            // The photo list lives in Supabase: wait for it (so a deleted/hidden photo never flashes),
+            // but never longer than a few seconds — then the static project photos are shown.
+            const status = document.getElementById('worksStatus');
+            if (status) status.textContent = 'Načítavam fotky…';
+            setTimeout(() => {
+                if (window.UKSTAV_GALLERY_SETTLED) return;
+                window.UKSTAV_GALLERY_SETTLED = true;
+                this.renderWorks();
+            }, CONFIG.GALLERY_WAIT_MS);
+        } else {
+            this.renderWorks();
+        }
     }
 
-    /** Rebuild the photo list (static projects + photos uploaded in admin) and redraw. */
+    /** True while the managed photo list (Supabase) is still being fetched. */
+    galleryPending() {
+        return !!(window.UkstavMedia && window.UkstavMedia.configured && !window.UKSTAV_GALLERY_SETTLED);
+    }
+
+    /** Rebuild the photo list (managed in the admin; static fallback) and redraw. */
     renderWorks() {
         const state = this.worksState;
         if (!state || !document.getElementById('worksGrid')) return;
-        state.photos = buildPortfolioPhotos(window.UKSTAV_GALLERY_ROWS || []);
+        state.photos = buildPortfolioPhotos(Array.isArray(window.UKSTAV_GALLERY_ROWS) ? window.UKSTAV_GALLERY_ROWS : null);
         this.renderWorksFilters();
         this.renderWorksGrid();
     }
@@ -876,12 +894,21 @@ class StavMasterWebsite {
             return;
         }
 
+        if (this.galleryPending()) {
+            setTimeout(() => {
+                if (window.UKSTAV_GALLERY_SETTLED) return;
+                window.UKSTAV_GALLERY_SETTLED = true;
+                this.loadProject(PROJECTS[projectId]);
+            }, CONFIG.GALLERY_WAIT_MS);
+            return;
+        }
         this.loadProject(PROJECTS[projectId]);
     }
 
     loadProject(project) {
         const container = document.getElementById('projectContent');
         if (!container) return;
+        const images = Array.isArray(project.images) ? project.images.filter(Boolean) : [];
 
         container.innerHTML = `
       <div class="project-hero">
@@ -910,13 +937,13 @@ class StavMasterWebsite {
 
       <div class="project-gallery">
         <h3>Fotogaléria</h3>
-        <div class="gallery-grid">
-          ${project.images.map((img, index) => `
+        ${images.length ? `<div class="gallery-grid">
+          ${images.map((img, index) => `
             <div class="gallery-item" onclick="openLightbox(${index})" role="button" tabindex="0" aria-label="Otvoriť obrázok ${index + 1}">
               <img src="${img}" alt="${project.title} - foto ${index + 1}" loading="lazy" width="300" height="250">
             </div>
           `).join('')}
-        </div>
+        </div>` : '<p class="loading">Fotky k tomuto projektu pripravujeme.</p>'}
       </div>
 
       <div class="project-description">
@@ -926,7 +953,7 @@ class StavMasterWebsite {
     `;
 
         // Store images for lightbox
-        this.lightboxImages = project.images.map((src, index) => ({
+        this.lightboxImages = images.map((src, index) => ({
             src,
             title: project.title,
             alt: `${project.title} - foto ${index + 1}`,

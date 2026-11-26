@@ -18,7 +18,7 @@
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./css/admin.css?v=5" />
+    <link rel="stylesheet" href="./css/admin.css?v=6" />
   </head>
   <body>
     <div class="admin-shell">
@@ -89,20 +89,16 @@
           <div id="panel-photos">
             <div id="category-tabs" class="source-tabs" role="tablist" aria-label="Sekcia webu">
               <button type="button" class="source-tabs__btn is-active" data-category="gallery" role="tab" aria-selected="true">Realizácie a galéria</button>
-              <button type="button" class="source-tabs__btn" data-category="works" role="tab" aria-selected="false">Nahradiť foto projektu</button>
-              <button type="button" class="source-tabs__btn" data-category="hero" role="tab" aria-selected="false">Hero</button>
+              <button type="button" class="source-tabs__btn" data-category="hero" role="tab" aria-selected="false">Hlavný banner</button>
               <button type="button" class="source-tabs__btn" data-category="services" role="tab" aria-selected="false">Služby</button>
               <button type="button" class="source-tabs__btn" data-category="team" role="tab" aria-selected="false">Tím</button>
               <button type="button" class="source-tabs__btn" data-category="brand" role="tab" aria-selected="false">Logo</button>
             </div>
 
-            <div id="works-project-wrap" class="hidden" style="margin-bottom: 1rem">
-              <label class="lead-edit" style="max-width: 28rem">
-                Projekt
-                <select id="works-project"></select>
-              </label>
-              <p class="hint">Tu nahradíte jednu z existujúcich fotiek projektu. Nové fotky pridávate v záložke „Realizácie a galéria“.</p>
-            </div>
+            <p id="gallery-intro" class="hint hidden">
+              Toto je jediné miesto pre všetky fotky v sekcii „Realizácie“ na webe aj na stránkach projektov.
+              Fotky pridávate, meníte im typ, projekt a popis, skrývate ich, presúvate, nahrádzate alebo mažete.
+            </p>
 
             <form id="upload-form" class="form form--wide">
               <h2 id="upload-title">Pridať fotografie</h2>
@@ -144,8 +140,34 @@
               <h2>Fotky v sekcii <span id="photos-count" class="list-count"></span></h2>
               <button type="button" class="btn btn-outline" id="refresh-photos">Obnoviť</button>
             </div>
+
+            <div id="gallery-toolbar" class="gallery-toolbar hidden">
+              <div id="gallery-filter-chips" class="chips__list" role="group" aria-label="Filter podľa typu prác"></div>
+              <div class="gallery-toolbar__row">
+                <label class="lead-edit">
+                  Projekt
+                  <select id="gallery-filter-project"></select>
+                </label>
+                <label class="lead-edit">
+                  Stav
+                  <select id="gallery-filter-visibility">
+                    <option value="all">všetky</option>
+                    <option value="visible">viditeľné na webe</option>
+                    <option value="hidden">skryté</option>
+                  </select>
+                </label>
+                <label class="lead-edit">
+                  Hľadať v popise
+                  <input id="gallery-filter-q" type="search" maxlength="80" placeholder="napr. kúpeľňa" />
+                </label>
+              </div>
+            </div>
+
             <p id="photos-empty" class="empty hidden">V tejto sekcii zatiaľ nie sú nahraté fotky.</p>
             <div id="photos-list" class="photos"></div>
+            <div class="photos-more">
+              <button type="button" class="btn btn-outline hidden" id="photos-more">Zobraziť ďalšie</button>
+            </div>
           </div>
 
           <div id="panel-leads" class="hidden">
@@ -192,10 +214,10 @@
       </main>
     </div>
 
-    <script src="./projects.js?v=5"></script>
-    <script src="./js/supabase-config.js?v=5"></script>
+    <script src="./projects.js?v=6"></script>
+    <script src="./js/supabase-config.js?v=6"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="./js/supabase-client.js?v=5"></script>
-    <script src="./js/admin.js?v=5"></script>
+    <script src="./js/supabase-client.js?v=6"></script>
+    <script src="./js/admin.js?v=6"></script>
   </body>
 </html>

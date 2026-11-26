@@ -370,29 +370,36 @@ function projectWorkTypes(project) {
 }
 
 /**
- * Flat list of every portfolio photo: photos uploaded in the admin first (newest first
- * as ordered there), then all photos of the static projects in project order.
- * @param {Array} uploaded rows from Supabase (category "gallery", real uploads only)
+ * Flat list of every portfolio photo for the "Realizácie" grid.
+ *  - rows = array  -> the gallery is managed in the admin (Supabase): exactly these photos,
+ *                     in the order set there (hidden ones are already filtered out).
+ *  - rows = null   -> Supabase unavailable: fall back to the static projects below.
+ * A photo without work types inherits the types of its project; without a project it
+ * only shows under "Všetko".
  */
-function buildPortfolioPhotos(uploaded) {
+function buildPortfolioPhotos(rows) {
     const photos = [];
     const types = new Set(WORK_TYPES.map((t) => t.key));
-    (uploaded || []).forEach((row) => {
-        const project = row.projectId ? PROJECTS[row.projectId] : null;
-        let rowTypes = (row.workTypes || []).filter((k) => types.has(k));
-        if (!rowTypes.length && project) rowTypes = projectWorkTypes(project);
-        photos.push({
-            id: `db/${row.id}`,
-            src: row.url,
-            thumb: row.url,
-            alt: row.alt || (project ? project.title : "Realizácia UKSTAV"),
-            title: row.alt || (project ? project.title : "Realizácia UKSTAV"),
-            subtitle: project ? project.title : "",
-            projectId: project ? row.projectId : null,
-            types: rowTypes,
-            source: "db",
+    if (Array.isArray(rows)) {
+        rows.forEach((row) => {
+            const project = row.projectId && PROJECTS[row.projectId] ? PROJECTS[row.projectId] : null;
+            let rowTypes = (row.workTypes || []).filter((k) => types.has(k));
+            if (!rowTypes.length && project) rowTypes = projectWorkTypes(project);
+            const title = row.alt || (project ? project.title : "Realizácia UKSTAV");
+            photos.push({
+                id: `db/${row.id}`,
+                src: row.url,
+                thumb: row.isLocalSeed ? workThumb(row.storagePath || row.url) : row.url,
+                alt: title,
+                title,
+                subtitle: project && row.alt ? project.title : project ? project.subtitle : "",
+                projectId: project ? row.projectId : null,
+                types: rowTypes,
+                source: "db",
+            });
         });
-    });
+        return photos;
+    }
     getOrderedProjectKeys().forEach((pid) => {
         const project = PROJECTS[pid];
         const projectTypes = projectWorkTypes(project);

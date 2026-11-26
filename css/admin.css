@@ -617,3 +617,59 @@ code {
 .photo-card .lead-edit select {
   min-height: 40px;
 }
+
+/* Gallery manager */
+.gallery-toolbar {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.gallery-toolbar__row {
+  display: grid;
+  gap: 0.6rem;
+}
+@media (min-width: 720px) {
+  .gallery-toolbar__row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.chip--btn {
+  font: inherit;
+  font-size: 0.82rem;
+}
+.chip--btn.is-active {
+  border-color: var(--accent);
+  background: rgba(245, 158, 11, 0.18);
+  font-weight: 600;
+}
+.chip__n {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 0.35em;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 0.72rem;
+  text-align: center;
+}
+.photo-card.is-hidden {
+  opacity: 0.6;
+  border-style: dashed;
+}
+.photo-card__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.6rem;
+}
+.photo-card__row .lead-edit {
+  flex: 1 1 14rem;
+}
+.photos-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
